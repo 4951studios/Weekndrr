@@ -1,0 +1,4 @@
+project_id = "bequxebdgnpcsywtmpjx"
+
+[functions.travel-pricing]
+verify_jwt = false

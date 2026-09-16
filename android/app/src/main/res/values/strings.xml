@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Weekndrr</string>
+    <string name="title_activity_main">Weekndrr</string>
+    <string name="package_name">com.weekndrr.myapp</string>
+    <string name="custom_url_scheme">com.weekndrr.myapp</string>
+    <!-- Google test app ID. Replace with the production AdMob app ID before release. -->
+    <string name="admob_app_id">ca-app-pub-3940256099942544~3347511713</string>
+</resources>

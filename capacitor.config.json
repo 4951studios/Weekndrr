@@ -1,0 +1,20 @@
+{
+  "appId": "com.weekndrr.myapp",
+  "appName": "Weekndrr",
+  "webDir": "dist",
+  "ios": {
+    "contentInset": "always",
+    "backgroundColor": "#ffffff"
+  },
+  "android": {
+    "backgroundColor": "#ffffff",
+    "adjustMarginsForEdgeToEdge": "force"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 800,
+      "backgroundColor": "#4338CAFF",
+      "showSpinner": false
+    }
+  }
+}

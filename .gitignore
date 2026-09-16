@@ -1,0 +1,20 @@
+node_modules
+dist
+dist-ssr
+*.local
+.DS_Store
+npm-debug.log*
+.vite
+
+# Native build artifacts (the ios/ and android/ projects themselves are committed)
+ios/App/App/public
+ios/App/build
+android/app/src/main/assets/public
+android/build
+android/app/build
+android/.gradle
+android/local.properties
+
+# Local env
+.env
+.env.local

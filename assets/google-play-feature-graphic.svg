@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4338CA"/>
+      <stop offset="1" stop-color="#312E9E"/>
+    </linearGradient>
+    <linearGradient id="sun" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FBBF65"/>
+      <stop offset="1" stop-color="#F97316"/>
+    </linearGradient>
+    <clipPath id="phoneClip">
+      <rect x="744" y="32" width="205" height="436" rx="27"/>
+    </clipPath>
+    <clipPath id="phoneBackClip">
+      <rect x="865" y="92" width="174" height="370" rx="25"/>
+    </clipPath>
+  </defs>
+
+  <rect width="1024" height="500" fill="url(#bg)"/>
+  <circle cx="920" cy="-12" r="168" fill="url(#sun)" opacity="0.92"/>
+  <circle cx="40" cy="482" r="210" fill="#5A50D5" opacity="0.48"/>
+  <path d="M-30 410 C150 330 220 490 390 395 S650 310 760 410" fill="none" stroke="#8B87E3" stroke-width="2" stroke-dasharray="7 11" opacity="0.7"/>
+  <path d="M280 40 C390 115 478 35 587 118 S742 135 812 86" fill="none" stroke="#FBBF65" stroke-width="2" stroke-dasharray="5 10" opacity="0.72"/>
+
+  <g transform="translate(72 58)">
+    <rect width="54" height="54" rx="15" fill="#fff" opacity="0.98"/>
+    <circle cx="27" cy="27" r="18" fill="none" stroke="#4338CA" stroke-width="3.5" opacity="0.36"/>
+    <path d="M13 18 L20 37 L27 24 L34 37 L41 18" fill="none" stroke="#4338CA" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="27" cy="43" r="2.2" fill="#F97316"/>
+  </g>
+  <text x="143" y="95" fill="#fff" font-family="Arial, sans-serif" font-size="27" font-weight="700" letter-spacing="-1">Weekndrr</text>
+
+  <text x="72" y="214" fill="#fff" font-family="Arial, sans-serif" font-size="65" font-weight="700" letter-spacing="-3">Leave town.</text>
+  <text x="72" y="281" fill="#FBBF65" font-family="Arial, sans-serif" font-size="65" font-weight="700" letter-spacing="-3">Keep the weekend.</text>
+  <text x="74" y="329" fill="#E3E3FA" font-family="Arial, sans-serif" font-size="20" font-weight="400">Affordable getaways, sorted by your budget, dates, and mood.</text>
+
+  <g transform="translate(72 382)">
+    <rect width="196" height="50" rx="25" fill="#F97316"/>
+    <text x="98" y="32" text-anchor="middle" fill="#fff" font-family="Arial, sans-serif" font-size="16" font-weight="700">Find your next escape  →</text>
+  </g>
+
+  <g transform="rotate(8 950 275)" opacity="0.82">
+    <rect x="865" y="92" width="174" height="370" rx="25" fill="#151A27"/>
+    <image href="screenshots/ios-04-joshua-tree.png" x="872" y="99" width="160" height="356" preserveAspectRatio="xMidYMid slice" clip-path="url(#phoneBackClip)"/>
+  </g>
+  <g transform="rotate(-5 846 250)">
+    <rect x="738" y="26" width="217" height="450" rx="31" fill="#151A27"/>
+    <image href="screenshots/ios-01-explore.png" x="745" y="33" width="203" height="436" preserveAspectRatio="xMidYMid slice" clip-path="url(#phoneClip)"/>
+    <rect x="816" y="39" width="68" height="16" rx="8" fill="#151A27"/>
+  </g>
+  <circle cx="705" cy="430" r="8" fill="#FBBF65"/>
+  <circle cx="682" cy="454" r="4" fill="#fff" opacity="0.75"/>
+</svg>
