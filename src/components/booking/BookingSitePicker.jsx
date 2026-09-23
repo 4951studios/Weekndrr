@@ -1,5 +1,5 @@
 import { Check, ExternalLink } from "lucide-react";
-import { sitesForTrip } from "@/lib/bookingSites";
+import { rememberBookingSite, sitesForTrip } from "@/lib/bookingSites";
 import { openExternal } from "@/lib/native";
 import { cn } from "@/lib/utils";
 
@@ -29,9 +29,11 @@ export default function BookingSitePicker({
               type="button"
               role={variant === "select" ? "radio" : undefined}
               aria-checked={variant === "select" ? isActive : undefined}
-              onClick={() =>
-                variant === "select" ? onChange(site.id) : openExternal(url)
-              }
+              onClick={() => {
+                rememberBookingSite(trip.id, site.id);
+                if (variant === "select") onChange(site.id);
+                else openExternal(url);
+              }}
               className={cn(
                 "flex w-full items-center gap-3 rounded-2xl border bg-white p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 isActive

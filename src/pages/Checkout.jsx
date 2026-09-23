@@ -9,7 +9,7 @@ import { findWeekendById } from "@/lib/weekends";
 import SafeImage from "@/components/SafeImage";
 import GuestForm from "@/components/checkout/GuestForm";
 import BookingSitePicker from "@/components/booking/BookingSitePicker";
-import { sitesForTrip } from "@/lib/bookingSites";
+import { getBookingSite, getRememberedBookingSite, sitesForTrip } from "@/lib/bookingSites";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatPrice, generateConfirmationCode } from "@/utils";
@@ -35,7 +35,11 @@ export default function Checkout() {
   const [formError, setFormError] = useState(null);
   const [bookingSiteId, setBookingSiteId] = useState(null);
 
-  const defaultSiteId = trip ? sitesForTrip(trip)[0]?.id : null;
+  const defaultSiteId = trip
+    ? sitesForTrip(trip).some((site) => site.id === getRememberedBookingSite(trip.id))
+      ? getRememberedBookingSite(trip.id)
+      : sitesForTrip(trip)[0]?.id
+    : null;
   const selectedSiteId = bookingSiteId ?? defaultSiteId;
 
   const total = (trip?.total_price ?? 0) * guests;

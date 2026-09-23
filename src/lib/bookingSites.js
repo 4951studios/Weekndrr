@@ -82,6 +82,26 @@ export function getBookingSite(id) {
   return BOOKING_SITES.find((site) => site.id === id) ?? null;
 }
 
+const LAST_SITE_PREFIX = "weekender:last-booking-site:";
+
+export function rememberBookingSite(tripId, siteId) {
+  if (!tripId || !siteId) return;
+  try {
+    window.localStorage.setItem(`${LAST_SITE_PREFIX}${tripId}`, siteId);
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+export function getRememberedBookingSite(tripId) {
+  if (!tripId) return null;
+  try {
+    return window.localStorage.getItem(`${LAST_SITE_PREFIX}${tripId}`);
+  } catch {
+    return null;
+  }
+}
+
 /** Flight and car deep links shown alongside the lodging handoff. */
 export function flightSearchUrl({ trip, origin, weekend }) {
   return `https://www.kayak.com/flights/${origin.iata}-${trip.iata_code}/${day(
