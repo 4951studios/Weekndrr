@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, MapPin, Radio, RefreshCw, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { useSearch } from "@/hooks/useSearch";
@@ -51,10 +51,17 @@ export default function Home() {
   const [surprisePicks, setSurprisePicks] = useState(null);
   const [shuffleDeck, setShuffleDeck] = useState([]);
   const [isShuffling, setIsShuffling] = useState(false);
+  const [surpriseHistory, setSurpriseHistory] = useState([]);
 
   const filteredTrips = useMemo(() => {
     const departure = findCity(departureCity);
-    return trips
+    return Array.from(
+      new Map(
+        trips
+          .filter((trip) => trip?.id)
+          .map((trip) => [trip.id, trip])
+      ).values()
+    )
       .filter((trip) => trip.total_price <= budget)
       .filter(
         (trip) =>
@@ -68,13 +75,28 @@ export default function Home() {
       .sort((a, b) => a.total_price - b.total_price);
   }, [trips, budget, maxDistance, departureCity, tripTypes, lodgingTypes, maxTravelTime]);
 
+  useEffect(() => {
+    setSurpriseHistory([]);
+  }, [filteredTrips]);
+
   const revealSurprise = async () => {
     if (isShuffling) return;
-    setShuffleDeck(shuffle(filteredTrips).slice(0, 5));
+    const unseenTrips = filteredTrips.filter(
+      (trip) => !surpriseHistory.includes(trip.id)
+    );
+    const pool = unseenTrips.length >= Math.min(3, filteredTrips.length)
+      ? unseenTrips
+      : filteredTrips;
+    const nextPicks = shuffle(pool).slice(0, 3);
+    setShuffleDeck(shuffle(pool).slice(0, 5));
     setSurprisePicks(null);
     setIsShuffling(true);
     await new Promise((resolve) => setTimeout(resolve, 950));
-    setSurprisePicks(shuffle(filteredTrips).slice(0, 3));
+    setSurprisePicks(nextPicks);
+    setSurpriseHistory((shown) => [
+      ...shown,
+      ...nextPicks.map((trip) => trip.id),
+    ]);
     setIsShuffling(false);
   };
 

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/client";
-import { liveSearchEnabled, searchTrips } from "@/api/providers";
+import { liveSearchEnabled, searchTrips, uniqueTrips } from "@/api/providers";
 
 export function useTrips({ departureCity, weekend } = {}) {
   return useQuery({
@@ -8,7 +8,7 @@ export function useTrips({ departureCity, weekend } = {}) {
     queryFn: () =>
       liveSearchEnabled
         ? searchTrips({ departureCity, weekend })
-        : entities.Trip.list("total_price"),
+        : entities.Trip.list("total_price").then(uniqueTrips),
     staleTime: liveSearchEnabled ? 5 * 60 * 1000 : Infinity,
     placeholderData: (previous) => previous,
   });

@@ -37,9 +37,19 @@ export function nearestCity({ latitude, longitude }) {
 
 export { cities };
 
+export function uniqueTrips(trips) {
+  return Array.from(
+    new Map(
+      trips
+        .filter((trip) => trip?.id)
+        .map((trip) => [trip.id, trip])
+    ).values()
+  );
+}
+
 /** Trip[] priced by Supabase Edge Functions when enabled, otherwise the seed. */
 export async function searchTrips({ departureCity, weekend }) {
-  if (!liveSearchEnabled || !weekend) return tripsSeed;
+  if (!liveSearchEnabled || !weekend) return uniqueTrips(tripsSeed);
 
   const origin = findCity(departureCity);
   try {
@@ -54,8 +64,8 @@ export async function searchTrips({ departureCity, weekend }) {
       },
     });
     if (error || !Array.isArray(data?.trips)) throw error ?? new Error("Invalid pricing response");
-    return data.trips;
+    return uniqueTrips(data.trips);
   } catch {
-    return tripsSeed;
+    return uniqueTrips(tripsSeed);
   }
 }
