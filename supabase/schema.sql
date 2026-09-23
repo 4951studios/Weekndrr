@@ -18,12 +18,15 @@ create table if not exists public.bookings (
   guests integer not null default 2,
   guest_info jsonb,
   booking_site text,
+  flight_site text,
   total_paid numeric not null default 0,
   status text not null default 'pending'
     check (status in ('pending', 'confirmed', 'cancelled')),
   confirmation_code text,
   created_date timestamptz not null default now()
 );
+
+alter table public.bookings add column if not exists flight_site text;
 
 create index if not exists saved_trips_user_id_idx on public.saved_trips (user_id);
 create index if not exists bookings_user_id_idx on public.bookings (user_id);

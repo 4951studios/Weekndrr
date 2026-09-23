@@ -19,7 +19,7 @@ import { shareLink, openExternal } from "@/lib/native";
 import LodgingGallery from "@/components/trips/LodgingGallery";
 import PriceBreakdown from "@/components/trips/PriceBreakdown";
 import BookingSitePicker from "@/components/booking/BookingSitePicker";
-import { flightSearchUrl, carSearchUrl } from "@/lib/bookingSites";
+import { carSearchUrl } from "@/lib/bookingSites";
 import { findCity } from "@/api/providers";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -211,27 +211,20 @@ export default function TripDetails() {
             variant="link"
           />
 
-          <div className="flex gap-2">
-            {!trip.is_drivable && (
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={() =>
-                  openExternal(
-                    flightSearchUrl({
-                      trip,
-                      origin: findCity(departureCity),
-                      weekend,
-                    })
-                  )
-                }
-              >
-                <Plane className="h-4 w-4" aria-hidden="true" />
-                Compare flights
-              </Button>
-            )}
-            {trip.is_drivable && (
+          {!trip.is_drivable && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-slate-900">Compare flights</h3>
+              <BookingSitePicker
+                trip={trip}
+                weekend={weekend}
+                product="flight"
+                origin={findCity(departureCity)}
+                variant="link"
+              />
+            </div>
+          )}
+          {trip.is_drivable && (
+            <div className="flex gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -241,8 +234,8 @@ export default function TripDetails() {
                 <Car className="h-4 w-4" aria-hidden="true" />
                 Rental cars
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </section>
       </div>
 

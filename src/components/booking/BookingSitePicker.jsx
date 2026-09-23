@@ -14,14 +14,16 @@ export default function BookingSitePicker({
   value,
   onChange,
   variant = "select",
+  product = "lodging",
+  origin,
 }) {
-  const sites = sitesForTrip(trip);
+  const sites = sitesForTrip(trip, product);
 
   return (
     <ul className="space-y-2" role={variant === "select" ? "radiogroup" : undefined}>
       {sites.map((site) => {
         const isActive = value === site.id;
-        const url = site.buildUrl({ trip, weekend, guests });
+        const url = site.buildUrl({ trip, weekend, guests, origin, product });
 
         return (
           <li key={site.id}>
@@ -30,7 +32,7 @@ export default function BookingSitePicker({
               role={variant === "select" ? "radio" : undefined}
               aria-checked={variant === "select" ? isActive : undefined}
               onClick={() => {
-                rememberBookingSite(trip.id, site.id);
+                rememberBookingSite(trip.id, site.id, product);
                 if (variant === "select") onChange(site.id);
                 else openExternal(url);
               }}

@@ -27,13 +27,15 @@ export const BOOKING_SITES = [
     name: "Expedia",
     tagline: "Bundle flight + hotel",
     accent: "#FFC94D",
-    supports: ["hotel", "rental"],
-    buildUrl: ({ trip, weekend, guests }) =>
-      `https://www.expedia.com/Hotel-Search?destination=${enc(
-        trip.destination
-      )}&startDate=${day(weekend.departure)}&endDate=${day(
-        weekend.return
-      )}&adults=${guests}`,
+    supports: ["hotel", "rental", "flight"],
+    buildUrl: ({ trip, weekend, guests, origin, product = "lodging" }) =>
+      product === "flight"
+        ? `https://www.expedia.com/Flights-Search?trip=roundtrip&leg1=from:${origin.iata},to:${trip.iata_code},departure:${day(weekend.departure)}TANYT&leg2=from:${trip.iata_code},to:${origin.iata},departure:${day(weekend.return)}TANYT&passengers=adults:${guests}`
+        : `https://www.expedia.com/Hotel-Search?destination=${enc(
+            trip.destination
+          )}&startDate=${day(weekend.departure)}&endDate=${day(
+            weekend.return
+          )}&adults=${guests}`,
   },
   {
     id: "airbnb",
@@ -66,16 +68,19 @@ export const BOOKING_SITES = [
     name: "Kayak",
     tagline: "Compare every site",
     accent: "#FF690F",
-    supports: ["hotel", "rental"],
-    buildUrl: ({ trip, weekend, guests }) =>
-      `https://www.kayak.com/hotels/${enc(trip.destination)}/${day(
-        weekend.departure
-      )}/${day(weekend.return)}/${guests}adults`,
+    supports: ["hotel", "rental", "flight"],
+    buildUrl: ({ trip, weekend, guests, origin, product = "lodging" }) =>
+      product === "flight"
+        ? flightSearchUrl({ trip, origin, weekend })
+        : `https://www.kayak.com/hotels/${enc(trip.destination)}/${day(
+            weekend.departure
+          )}/${day(weekend.return)}/${guests}adults`,
   },
 ];
 
-export function sitesForTrip(trip) {
-  return BOOKING_SITES.filter((site) => site.supports.includes(trip.lodging_type));
+export function sitesForTrip(trip, product = "lodging") {
+  const category = product === "flight" ? "flight" : trip.lodging_type;
+  return BOOKING_SITES.filter((site) => site.supports.includes(category));
 }
 
 export function getBookingSite(id) {
@@ -84,19 +89,27 @@ export function getBookingSite(id) {
 
 const LAST_SITE_PREFIX = "weekender:last-booking-site:";
 
-export function rememberBookingSite(tripId, siteId) {
+export function rememberBookingSite(tripId, siteId, product = "lodging") {
   if (!tripId || !siteId) return;
   try {
-    window.localStorage.setItem(`${LAST_SITE_PREFIX}${tripId}`, siteId);
+    window.localStorage.setItem(`${LAST_SITE_PREFIX}${product}:${tripId}`, siteId);
+    if (product === "lodging") {
+      window.localStorage.setItem(`${LAST_SITE_PREFIX}${tripId}`, siteId);
+    }
   } catch {
     /* storage unavailable */
   }
 }
 
-export function getRememberedBookingSite(tripId) {
+export function getRememberedBookingSite(tripId, product = "lodging") {
   if (!tripId) return null;
   try {
-    return window.localStorage.getItem(`${LAST_SITE_PREFIX}${tripId}`);
+    return (
+      window.localStorage.getItem(`${LAST_SITE_PREFIX}${product}:${tripId}`) ??
+      (product === "lodging"
+        ? window.localStorage.getItem(`${LAST_SITE_PREFIX}${tripId}`)
+        : null)
+    );
   } catch {
     return null;
   }

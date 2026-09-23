@@ -9,10 +9,11 @@ import { findWeekendById } from "@/lib/weekends";
 import SafeImage from "@/components/SafeImage";
 import GuestForm from "@/components/checkout/GuestForm";
 import BookingSitePicker from "@/components/booking/BookingSitePicker";
-import { getBookingSite, getRememberedBookingSite, sitesForTrip } from "@/lib/bookingSites";
+import { getRememberedBookingSite, sitesForTrip } from "@/lib/bookingSites";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatPrice, generateConfirmationCode } from "@/utils";
+import { findCity } from "@/api/providers";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -34,6 +35,7 @@ export default function Checkout() {
   const [processing, setProcessing] = useState(false);
   const [formError, setFormError] = useState(null);
   const [bookingSiteId, setBookingSiteId] = useState(null);
+  const [flightSiteId, setFlightSiteId] = useState(null);
 
   const defaultSiteId = trip
     ? sitesForTrip(trip).some((site) => site.id === getRememberedBookingSite(trip.id))
@@ -41,6 +43,13 @@ export default function Checkout() {
       : sitesForTrip(trip)[0]?.id
     : null;
   const selectedSiteId = bookingSiteId ?? defaultSiteId;
+  const flightSites = trip ? sitesForTrip(trip, "flight") : [];
+  const defaultFlightSiteId = trip && !trip.is_drivable
+    ? (flightSites.some((site) => site.id === getRememberedBookingSite(trip.id, "flight"))
+        ? getRememberedBookingSite(trip.id, "flight")
+        : flightSites[0]?.id)
+    : null;
+  const selectedFlightSiteId = flightSiteId ?? defaultFlightSiteId;
 
   const total = (trip?.total_price ?? 0) * guests;
 
@@ -73,6 +82,7 @@ export default function Checkout() {
         total_paid: 0,
         status: "pending",
         booking_site: selectedSiteId,
+        flight_site: selectedFlightSiteId,
         confirmation_code: generateConfirmationCode(),
       });
 
@@ -204,6 +214,26 @@ export default function Checkout() {
             onChange={setBookingSiteId}
           />
         </section>
+
+        {!trip.is_drivable && (
+          <section className="space-y-3">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900">Compare flights</h2>
+              <p className="text-xs text-muted-foreground">
+                Open a pre-searched flight comparison for this trip.
+              </p>
+            </div>
+            <BookingSitePicker
+              trip={trip}
+              weekend={weekend}
+              guests={guests}
+              value={selectedFlightSiteId}
+              onChange={setFlightSiteId}
+              product="flight"
+              origin={findCity(departureCity)}
+            />
+          </section>
+        )}
 
         <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
           <h2 className="text-sm font-semibold text-slate-900">Trip summary</h2>

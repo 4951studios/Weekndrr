@@ -5,6 +5,7 @@ import confetti from "canvas-confetti";
 import { Check, ExternalLink } from "lucide-react";
 import { useBooking, useTrip } from "@/hooks/useEntities";
 import { getBookingSite } from "@/lib/bookingSites";
+import { findCity } from "@/api/providers";
 import { openExternal } from "@/lib/native";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -52,6 +53,7 @@ export default function Confirmation() {
     booking.travel_dates.return
   );
   const site = getBookingSite(booking.booking_site);
+  const flightSite = getBookingSite(booking.flight_site);
 
   return (
     <motion.div
@@ -97,6 +99,12 @@ export default function Confirmation() {
             <dd className="font-medium text-slate-900">{site.name}</dd>
           </div>
         )}
+        {flightSite && trip && !trip.is_drivable && (
+          <div className="flex items-center justify-between text-sm">
+            <dt className="text-muted-foreground">Flights</dt>
+            <dd className="font-medium text-slate-900">{flightSite.name}</dd>
+          </div>
+        )}
         <div className="flex items-center justify-between text-sm">
           <dt className="text-muted-foreground">Estimated total</dt>
           <dd className="font-bold text-primary">
@@ -127,6 +135,31 @@ export default function Confirmation() {
           >
             <ExternalLink className="h-4 w-4" aria-hidden="true" />
             Continue on {site.name}
+          </Button>
+        )}
+        {flightSite && trip && !trip.is_drivable && (
+          <Button
+            type="button"
+            size="lg"
+            variant="outline"
+            className="w-full"
+            onClick={() =>
+              openExternal(
+                flightSite.buildUrl({
+                  trip,
+                  origin: findCity(booking.departure_city),
+                  weekend: {
+                    departure: new Date(booking.travel_dates.departure),
+                    return: new Date(booking.travel_dates.return),
+                  },
+                  guests: booking.guests,
+                  product: "flight",
+                })
+              )
+            }
+          >
+            <ExternalLink className="h-4 w-4" aria-hidden="true" />
+            Compare flights on {flightSite.name}
           </Button>
         )}
         {trip && (
