@@ -83,6 +83,7 @@ export function AuthProvider({ children }) {
       changePassword: (input) => auth.changePassword(input),
       completePasswordReset: (password) => auth.completePasswordReset(password),
       signOut: () => auth.signOut(),
+      deleteAccount: () => auth.deleteAccount(),
       resetPassword: (email) => auth.resetPassword(email),
     }),
     [user, loading, migration]

@@ -130,6 +130,27 @@ export const auth = {
     if (error) throw new Error(error.message);
   },
 
+  async deleteAccount() {
+    if (!supabaseEnabled) {
+      writeDemoUser(null);
+      try {
+        window.localStorage.removeItem("weekender:saved_trips");
+        window.localStorage.removeItem("weekender:bookings");
+      } catch {
+        /* storage unavailable */
+      }
+      return;
+    }
+
+    const { error } = await supabase.functions.invoke("delete-account", {
+      body: {},
+    });
+    if (error) throw new Error(error.message);
+
+    const { error: signOutError } = await supabase.auth.signOut({ scope: "local" });
+    if (signOutError) throw new Error(signOutError.message);
+  },
+
   async resetPassword(email) {
     if (!supabaseEnabled) return;
     const { error } = await supabase.auth.resetPasswordForEmail(email, {

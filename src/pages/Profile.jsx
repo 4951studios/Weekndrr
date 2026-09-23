@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import { Check, KeyRound, LogOut, User, X } from "lucide-react";
+import { AlertTriangle, Check, KeyRound, LogOut, Trash2, User, X } from "lucide-react";
 import { useBookings, useTrips } from "@/hooks/useEntities";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,9 @@ export default function Profile() {
   const [passwordError, setPasswordError] = useState(null);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
+  const [confirmingDeletion, setConfirmingDeletion] = useState(false);
+  const [deletionError, setDeletionError] = useState(null);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const { data: bookings = [], isError: bookingsError, refetch: retryBookings } =
     useBookings();
   const { data: trips = [] } = useTrips();
@@ -36,6 +39,7 @@ export default function Profile() {
     migration,
     dismissMigration,
     changePassword,
+    deleteAccount,
   } = useAuth();
 
   const tripById = Object.fromEntries(trips.map((trip) => [trip.id, trip]));
@@ -44,6 +48,17 @@ export default function Profile() {
     setPasswords((current) => ({ ...current, [field]: value }));
     setPasswordError(null);
     setPasswordSuccess(false);
+  };
+
+  const submitAccountDeletion = async () => {
+    setDeletionError(null);
+    setDeletingAccount(true);
+    try {
+      await deleteAccount();
+    } catch (error) {
+      setDeletionError(error.message ?? "Unable to delete your account.");
+      setDeletingAccount(false);
+    }
   };
 
   const submitPasswordChange = async (event) => {
@@ -187,6 +202,55 @@ export default function Profile() {
               <LogOut className="h-4 w-4" aria-hidden="true" />
               Sign out
             </Button>
+            <section className="rounded-2xl border border-rose-200 bg-rose-50/50 p-4">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-rose-900">
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
+                Delete account
+              </h2>
+              {!confirmingDeletion ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-3 border-rose-300 text-rose-700 hover:bg-rose-100 hover:text-rose-800"
+                  onClick={() => {
+                    setDeletionError(null);
+                    setConfirmingDeletion(true);
+                  }}
+                >
+                  Delete my account
+                </Button>
+              ) : (
+                <div className="mt-3 space-y-3">
+                  <p className="flex items-start gap-2 text-xs text-rose-800">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                    This permanently deletes your account, saved trips, and booking history.
+                  </p>
+                  {deletionError && (
+                    <p role="alert" className="text-xs font-medium text-rose-700">
+                      {deletionError}
+                    </p>
+                  )}
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setConfirmingDeletion(false)}
+                      disabled={deletingAccount}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      className="bg-rose-600 text-white hover:bg-rose-700"
+                      onClick={submitAccountDeletion}
+                      disabled={deletingAccount}
+                    >
+                      {deletingAccount ? "Deleting…" : "Permanently delete"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </section>
           </div>
         ) : (
           <div className="flex gap-3">
