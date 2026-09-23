@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Info, Loader2, MailCheck } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Info, Loader2, MailCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/api/supabase";
 import { Button } from "@/components/ui/button";
@@ -310,18 +310,40 @@ export default function AuthScreen({ mode }) {
   );
 }
 
-function Field({ id, label, error, onChange, ...props }) {
+function Field({ id, label, error, onChange, type = "text", ...props }) {
+  const [visible, setVisible] = useState(false);
+  const isPassword = type === "password";
+
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
-      <Input
-        id={id}
-        name={id}
-        aria-invalid={Boolean(error)}
-        aria-describedby={error ? `${id}-error` : undefined}
-        onChange={(event) => onChange(event.target.value)}
-        {...props}
-      />
+      <div className={isPassword ? "relative" : undefined}>
+        <Input
+          id={id}
+          name={id}
+          type={isPassword && visible ? "text" : type}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? `${id}-error` : undefined}
+          onChange={(event) => onChange(event.target.value)}
+          className={isPassword ? "pr-11" : undefined}
+          {...props}
+        />
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setVisible((current) => !current)}
+            aria-label={visible ? "Hide password" : "Show password"}
+            aria-pressed={visible}
+            className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-xl text-slate-500 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {visible ? (
+              <EyeOff className="h-4 w-4" aria-hidden="true" />
+            ) : (
+              <Eye className="h-4 w-4" aria-hidden="true" />
+            )}
+          </button>
+        )}
+      </div>
       {error && (
         <p id={`${id}-error`} className="text-xs font-medium text-rose-600">
           {error}

@@ -1,6 +1,16 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import { AlertTriangle, Check, KeyRound, LogOut, Trash2, User, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  Eye,
+  EyeOff,
+  KeyRound,
+  LogOut,
+  Trash2,
+  User,
+  X,
+} from "lucide-react";
 import { useBookings, useTrips } from "@/hooks/useEntities";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -330,16 +340,34 @@ export default function Profile() {
 }
 
 function PasswordField({ id, label, value, onChange, autoComplete }) {
+  const [visible, setVisible] = useState(false);
+
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
-      <Input
-        id={id}
-        type="password"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        autoComplete={autoComplete}
-      />
+      <div className="relative">
+        <Input
+          id={id}
+          type={visible ? "text" : "password"}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          autoComplete={autoComplete}
+          className="pr-11"
+        />
+        <button
+          type="button"
+          onClick={() => setVisible((current) => !current)}
+          aria-label={visible ? "Hide password" : "Show password"}
+          aria-pressed={visible}
+          className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-xl text-slate-500 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {visible ? (
+            <EyeOff className="h-4 w-4" aria-hidden="true" />
+          ) : (
+            <Eye className="h-4 w-4" aria-hidden="true" />
+          )}
+        </button>
+      </div>
     </div>
   );
 }
