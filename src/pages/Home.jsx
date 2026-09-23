@@ -49,6 +49,8 @@ export default function Home() {
   const [locationOpen, setLocationOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [surprisePicks, setSurprisePicks] = useState(null);
+  const [shuffleDeck, setShuffleDeck] = useState([]);
+  const [isShuffling, setIsShuffling] = useState(false);
 
   const filteredTrips = useMemo(() => {
     const departure = findCity(departureCity);
@@ -66,7 +68,15 @@ export default function Home() {
       .sort((a, b) => a.total_price - b.total_price);
   }, [trips, budget, maxDistance, departureCity, tripTypes, lodgingTypes, maxTravelTime]);
 
-  const revealSurprise = () => setSurprisePicks(shuffle(filteredTrips).slice(0, 3));
+  const revealSurprise = async () => {
+    if (isShuffling) return;
+    setShuffleDeck(shuffle(filteredTrips).slice(0, 5));
+    setSurprisePicks(null);
+    setIsShuffling(true);
+    await new Promise((resolve) => setTimeout(resolve, 950));
+    setSurprisePicks(shuffle(filteredTrips).slice(0, 3));
+    setIsShuffling(false);
+  };
 
   const hasLivePrices = trips.some(
     (trip) => trip.price_source === "live" || trip.price_source === "mixed"
@@ -129,15 +139,18 @@ export default function Home() {
           <button
             type="button"
             onClick={revealSurprise}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/50 bg-primary/[0.03] text-sm font-semibold text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            disabled={isShuffling}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/50 bg-primary/[0.03] text-sm font-semibold text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70"
           >
-            <Sparkles className="h-4 w-4" aria-hidden="true" />
-            Surprise Me!
+            <Sparkles className={cn("h-4 w-4", isShuffling && "animate-spin")} aria-hidden="true" />
+            {isShuffling ? "Finding your escape…" : "Surprise Me!"}
           </button>
         </div>
 
-        <AnimatePresence>
-          {surprisePicks && (
+        <AnimatePresence mode="wait">
+          {isShuffling ? (
+            <ShuffleAnimation key="shuffle" trips={shuffleDeck} />
+          ) : surprisePicks ? (
             <motion.section
               key="surprise"
               initial={{ opacity: 0, height: 0 }}
@@ -157,8 +170,9 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={revealSurprise}
+                      disabled={isShuffling}
                       aria-label="Shuffle surprise picks again"
-                      className="rounded-full p-1.5 text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="rounded-full p-1.5 text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                     >
                       <RefreshCw className="h-4 w-4" aria-hidden="true" />
                     </button>
@@ -192,7 +206,7 @@ export default function Home() {
                 )}
               </div>
             </motion.section>
-          )}
+          ) : null}
         </AnimatePresence>
 
         <section aria-labelledby="results-heading" className="space-y-4">
@@ -257,5 +271,58 @@ export default function Home() {
         onClear={clearFilters}
       />
     </div>
+  );
+}
+
+function ShuffleAnimation({ trips }) {
+  return (
+    <motion.section
+      key="shuffle-animation"
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: "auto" }}
+      exit={{ opacity: 0, height: 0 }}
+      transition={{ duration: 0.25 }}
+      className="overflow-hidden"
+      aria-live="polite"
+      aria-label="Finding surprise destinations"
+    >
+      <div className="relative flex h-52 items-center justify-center overflow-hidden rounded-2xl border border-primary/20 bg-primary/5 p-4">
+        <div className="relative h-40 w-56">
+          {trips.map((trip, index) => (
+            <motion.div
+              key={`${trip.id}-${index}`}
+              initial={{ opacity: 0, y: 30, rotate: (index - 2) * 8 }}
+              animate={{
+                opacity: 1,
+                y: [18, -8, 8, 0],
+                x: [index * 5 - 10, -index * 4, index * 3, 0],
+                rotate: [(index - 2) * 8, (index - 2) * -5, (index - 2) * 4, 0],
+              }}
+              transition={{
+                duration: 0.85,
+                delay: index * 0.07,
+                ease: "easeInOut",
+              }}
+              className="absolute inset-0 overflow-hidden rounded-2xl border-4 border-white bg-slate-200 shadow-lg"
+              style={{ zIndex: trips.length - index }}
+            >
+              <img
+                src={trip.image_url}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-3 pb-2 pt-8">
+                <p className="truncate text-sm font-semibold text-white">
+                  {trip.destination}
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+        <p className="absolute bottom-3 left-0 right-0 text-center text-xs font-medium text-primary">
+          Shuffling places worth leaving for
+        </p>
+      </div>
+    </motion.section>
   );
 }
