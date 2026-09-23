@@ -41,6 +41,7 @@ export function SearchProvider({ children }) {
   );
   const [selectedWeekendId, setSelectedWeekendId] = useState(weekends[0].id);
   const [budget, setBudget] = useState(500);
+  const [maxDistance, setMaxDistance] = useState(null);
   const [tripTypes, setTripTypes] = useState([]);
   const [lodgingTypes, setLodgingTypes] = useState([]);
   const [maxTravelTime, setMaxTravelTime] = useState(null);
@@ -94,7 +95,7 @@ export function SearchProvider({ children }) {
     weekends.find((weekend) => weekend.id === selectedWeekendId) ?? weekends[0];
 
   const activeFilterCount =
-    tripTypes.length + lodgingTypes.length + (maxTravelTime ? 1 : 0);
+    tripTypes.length + lodgingTypes.length + (maxTravelTime ? 1 : 0) + (maxDistance ? 1 : 0);
 
   const value = {
     weekends,
@@ -107,6 +108,8 @@ export function SearchProvider({ children }) {
     setSelectedWeekendId,
     budget,
     setBudget,
+    maxDistance,
+    setMaxDistance,
     tripTypes,
     setTripTypes,
     lodgingTypes,
@@ -118,6 +121,7 @@ export function SearchProvider({ children }) {
       setTripTypes([]);
       setLodgingTypes([]);
       setMaxTravelTime(null);
+      setMaxDistance(null);
     },
   };
 

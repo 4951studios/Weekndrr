@@ -3,16 +3,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, MapPin, Radio, RefreshCw, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { useSearch } from "@/hooks/useSearch";
 import { useSavedTrips, useTrips } from "@/hooks/useEntities";
-import { liveSearchEnabled } from "@/api/providers";
+import { findCity, liveSearchEnabled } from "@/api/providers";
 import { cn } from "@/lib/utils";
 import LocationPicker from "@/components/search/LocationPicker";
 import WeekendPicker from "@/components/search/WeekendPicker";
 import BudgetSlider from "@/components/search/BudgetSlider";
+import DistanceSlider from "@/components/search/DistanceSlider";
 import FilterChips from "@/components/search/FilterChips";
 import TripsList from "@/components/trips/TripsList";
 import TripCard from "@/components/trips/TripCard";
 import { Button } from "@/components/ui/button";
 import { shuffle } from "@/utils";
+import { distanceInMiles } from "@/lib/distance";
 
 export default function Home() {
   const {
@@ -25,6 +27,8 @@ export default function Home() {
     setSelectedWeekendId,
     budget,
     setBudget,
+    maxDistance,
+    setMaxDistance,
     tripTypes,
     setTripTypes,
     lodgingTypes,
@@ -47,15 +51,20 @@ export default function Home() {
   const [surprisePicks, setSurprisePicks] = useState(null);
 
   const filteredTrips = useMemo(() => {
+    const departure = findCity(departureCity);
     return trips
       .filter((trip) => trip.total_price <= budget)
+      .filter(
+        (trip) =>
+          !maxDistance || distanceInMiles(departure, trip) <= maxDistance
+      )
       .filter((trip) => !tripTypes.length || tripTypes.includes(trip.trip_type))
       .filter(
         (trip) => !lodgingTypes.length || lodgingTypes.includes(trip.lodging_type)
       )
       .filter((trip) => !maxTravelTime || trip.travel_time_hours <= maxTravelTime)
       .sort((a, b) => a.total_price - b.total_price);
-  }, [trips, budget, tripTypes, lodgingTypes, maxTravelTime]);
+  }, [trips, budget, maxDistance, departureCity, tripTypes, lodgingTypes, maxTravelTime]);
 
   const revealSurprise = () => setSurprisePicks(shuffle(filteredTrips).slice(0, 3));
 
@@ -99,6 +108,8 @@ export default function Home() {
         />
 
         <BudgetSlider value={budget} onChange={setBudget} />
+
+        <DistanceSlider value={maxDistance} onChange={setMaxDistance} />
 
         <div className="space-y-3">
           <Button
