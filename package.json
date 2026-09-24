@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "sync": "npm run build && cap sync",
+    "sync": "npm run build && cap sync && node scripts/sync-ios-target.mjs",
     "ios": "npm run sync && cap open ios",
     "android": "npm run sync && cap open android",
     "ios:run": "npm run sync && cap run ios",

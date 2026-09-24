@@ -1,5 +1,5 @@
 {
-	"appId": "app.weekender.wanderer",
+	"appId": "com.weekndrr.myapp",
 	"appName": "Weekndrr",
 	"webDir": "dist",
 	"ios": {
@@ -18,12 +18,13 @@
 		}
 	},
 	"packageClassList": [
+		"AdMobPlugin",
+		"AppPlugin",
 		"CAPBrowserPlugin",
 		"GeolocationPlugin",
 		"HapticsPlugin",
 		"SharePlugin",
 		"SplashScreenPlugin",
-		"StatusBarPlugin",
-		"AdMobPlugin"
+		"StatusBarPlugin"
 	]
 }
