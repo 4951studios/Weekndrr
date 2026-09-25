@@ -63,6 +63,8 @@ browser or native app:
 ```bash
 supabase functions deploy travel-pricing
 supabase secrets set \
+  ROUTESTACK_API_KEY=your-key \
+  ROUTESTACK_API_SECRET=your-secret \
   AMADEUS_CLIENT_ID=your-id \
   AMADEUS_CLIENT_SECRET=your-secret \
   RAPIDAPI_KEY=your-key
@@ -79,13 +81,16 @@ also made account-only.
 | Data | Provider | Edge Function secret |
 | --- | --- | --- |
 | Flights (round-trip) | [Amadeus Self-Service](https://developers.amadeus.com/self-service) Flight Offers Search | `AMADEUS_CLIENT_ID` / `AMADEUS_CLIENT_SECRET` |
-| Hotels (2 nights) | Amadeus Hotel List + Hotel Offers v3 | same Amadeus keys |
+| Hotels (2 nights) | [RouteStack MCP API](https://www.routestack.ai/docs) with Amadeus fallback | `ROUTESTACK_API_KEY` / `ROUTESTACK_API_SECRET` |
 | Car rental | [Booking.com on RapidAPI](https://rapidapi.com/DataCrawler/api/booking-com15) | `RAPIDAPI_KEY` |
 
 How it behaves:
 
 - **Per-trip, per-source fallback.** Each lookup is independent; anything that errors or
   returns nothing keeps its demo price, so the list is never empty or half-broken.
+- **RouteStack rollout.** When both RouteStack secrets are configured, hotel searches use
+  RouteStack's live destination and hotel endpoints. If RouteStack is unavailable or returns
+  no priced hotels, the existing Amadeus hotel lookup is used automatically.
 - **Honest labelling.** The results header shows `Live prices` only when at least one trip
   actually came back priced, `Demo prices` otherwise, and `Updating…` while fetching.
 - **CORS and secrets.** The browser/native client calls

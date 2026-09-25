@@ -14,6 +14,123 @@ const json = (body: unknown, status = 200) =>
 
 const dateOnly = (value: string) => value.slice(0, 10);
 
+const routeStackBaseUrl = Deno.env.get("ROUTESTACK_BASE_URL") ?? "https://mcp.routestack.ai";
+let routeStackToken: { value: string; expiresAt: number } | null = null;
+let routeStackRequest: Promise<string> | null = null;
+
+const unwrapRouteStackResult = (data: any) => data?.result?.result ?? data?.result ?? data;
+
+async function getRouteStackToken() {
+  const apiKey = Deno.env.get("ROUTESTACK_API_KEY");
+  const apiSecret = Deno.env.get("ROUTESTACK_API_SECRET");
+  if (!apiKey || !apiSecret) return null;
+  if (routeStackToken && Date.now() < routeStackToken.expiresAt) return routeStackToken.value;
+  if (routeStackRequest) return routeStackRequest;
+
+  routeStackRequest = (async () => {
+    const timestamp = Math.floor(Date.now() / 1000);
+    const nonce = crypto.randomUUID();
+    const payload = `${apiKey}:${timestamp}:${nonce}`;
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(apiSecret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload));
+    const hmac = btoa(String.fromCharCode(...new Uint8Array(signature)))
+      .replaceAll("+", "-")
+      .replaceAll("/", "_")
+      .replaceAll("=", "");
+
+    try {
+      const response = await fetch(`${routeStackBaseUrl}/mcp/auth/partner-token`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey, timestamp, nonce, hmac }),
+      });
+      if (!response.ok) throw new Error(`RouteStack authentication failed: ${response.status}`);
+      const data = await response.json();
+      const token = data?.token ?? data?.access_token ?? data?.jwt;
+      if (!token) throw new Error("RouteStack authentication returned no token");
+      routeStackToken = {
+        value: token,
+        expiresAt: Date.now() + 10 * 60 * 1000,
+      };
+      return token;
+    } finally {
+      routeStackRequest = null;
+    }
+  })();
+
+  return routeStackRequest;
+}
+
+async function routeStackPost(path: string, body: Record<string, unknown>) {
+  const token = await getRouteStackToken();
+  if (!token) return null;
+  const response = await fetch(`${routeStackBaseUrl}${path}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new Error(`RouteStack request failed: ${response.status}`);
+  return response.json();
+}
+
+function routeStackPrice(entry: any) {
+  const candidates = [
+    entry?.price,
+    entry?.totalPrice,
+    entry?.minPrice,
+    entry?.publishedRate,
+    entry?.price?.total,
+    entry?.price?.amount,
+    entry?.rates?.[0]?.price?.total,
+    entry?.rooms?.[0]?.rates?.[0]?.price?.total,
+  ];
+  const price = candidates.map(Number).find((value) => Number.isFinite(value) && value > 0);
+  return price ? Math.round(price) : null;
+}
+
+async function routeStackHotelOffer({ destination, latitude, longitude, checkIn, checkOut }: Record<string, string>) {
+  const destinationData = await routeStackPost("/mcp/hotel/search-destinations", {
+    type: "DESTINATION",
+    query: destination,
+  });
+  const destinations = unwrapRouteStackResult(destinationData);
+  const match = Array.isArray(destinations) ? destinations[0] : destinations;
+  const destinationId = match?.destinationId ?? match?.id;
+  if (!destinationId) return null;
+
+  const searchData = await routeStackPost("/mcp/hotel/search-hotels", {
+    destinationType: "DESTINATION",
+    destinationId,
+    lat: Number(latitude),
+    long: Number(longitude),
+    checkIn: dateOnly(checkIn),
+    checkOut: dateOnly(checkOut),
+    roomCount: 1,
+    rooms: [{ adults: 2, children: 0, infants: 0 }],
+    currency: "USD",
+    limit: 20,
+  });
+  const hotels = unwrapRouteStackResult(searchData);
+  const offers = (Array.isArray(hotels) ? hotels : []).map((entry: any) => ({
+    price: routeStackPrice(entry),
+    name: entry?.name ?? entry?.hotelName ?? entry?.property?.name,
+    rating: Number(entry?.rating ?? entry?.starRating ?? entry?.property?.rating) || null,
+  })).filter((entry: any) => entry.price);
+  if (!offers.length) return null;
+  return offers.reduce((cheapest: any, entry: any) =>
+    entry.price < cheapest.price ? entry : cheapest
+  );
+}
+
 let amadeusToken: { value: string; expiresAt: number } | null = null;
 let amadeusRequest: Promise<string> | null = null;
 
@@ -120,6 +237,24 @@ async function hotelOffer({ cityCode, checkIn, checkOut }: Record<string, string
     : null;
 }
 
+async function liveHotelOffer({ cityCode, destination, latitude, longitude, checkIn, checkOut }: Record<string, string>) {
+  if (Deno.env.get("ROUTESTACK_API_KEY") && Deno.env.get("ROUTESTACK_API_SECRET")) {
+    try {
+      const routeStackOffer = await routeStackHotelOffer({
+        destination,
+        latitude,
+        longitude,
+        checkIn,
+        checkOut,
+      });
+      if (routeStackOffer) return routeStackOffer;
+    } catch {
+      // Fall through to the existing provider when RouteStack is unavailable.
+    }
+  }
+  return hotelOffer({ cityCode, checkIn, checkOut });
+}
+
 async function carOffer({ latitude, longitude, pickUp, dropOff }: Record<string, string>) {
   const key = Deno.env.get("RAPIDAPI_KEY");
   if (!key) return null;
@@ -167,8 +302,11 @@ async function priceTrip(trip: any, origin: any, weekend: any) {
   };
 
   const tasks: Promise<void>[] = [
-    hotelOffer({
+    liveHotelOffer({
       cityCode: trip.city_code,
+      destination: trip.destination,
+      latitude: String(trip.latitude),
+      longitude: String(trip.longitude),
       checkIn: weekend.departure,
       checkOut: weekend.return,
     })
