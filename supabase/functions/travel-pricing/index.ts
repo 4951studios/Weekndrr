@@ -131,6 +131,66 @@ async function routeStackHotelOffer({ destination, latitude, longitude, checkIn,
   );
 }
 
+function routeStackLocationCode(data: any) {
+  const locations = unwrapRouteStackResult(data);
+  const match = Array.isArray(locations) ? locations[0] : locations;
+  return match?.locationCode ?? match?.location_code ?? match?.code ?? match?.id ?? null;
+}
+
+function routeStackCarPrice(entry: any) {
+  const candidates = [
+    entry?.price,
+    entry?.totalPrice,
+    entry?.total_price,
+    entry?.price_postpaid?.total,
+    entry?.price_postpaid?.amount,
+    entry?.price_prepaid?.total,
+    entry?.price_prepaid?.amount,
+    entry?.pricing?.total,
+    entry?.pricing?.amount,
+  ];
+  const price = candidates.map(Number).find((value) => Number.isFinite(value) && value > 0);
+  return price ? Math.round(price) : null;
+}
+
+async function routeStackCarOffer({ destination, latitude, longitude, pickUp, dropOff }: Record<string, string>) {
+  const locationData = await routeStackPost("/mcp/car/locations", { term: destination });
+  const locationCode = routeStackLocationCode(locationData);
+  if (!locationCode) return null;
+
+  const location = {
+    locationCode,
+    code: locationCode,
+    name: destination,
+    latitude: Number(latitude),
+    longitude: Number(longitude),
+  };
+  const searchData = await routeStackPost("/mcp/car/search", {
+    pickup: location,
+    dropoff: location,
+    pickupLocation: location,
+    dropoffLocation: location,
+    pickupDate: dateOnly(pickUp),
+    dropoffDate: dateOnly(dropOff),
+    pickupTime: "10:00",
+    dropoffTime: "18:00",
+    currency: "USD",
+  });
+  const payload = unwrapRouteStackResult(searchData);
+  const cars = Array.isArray(payload)
+    ? payload
+    : payload?.cars ?? payload?.search_results ?? payload?.results ?? payload?.result ?? [];
+  const offers = (Array.isArray(cars) ? cars : []).map((entry: any) => ({
+    price: routeStackCarPrice(entry),
+    vehicle: entry?.vehicle ?? entry?.vehicleName ?? entry?.vehicle_info?.v_name ?? "Rental car",
+    supplier: entry?.supplier ?? entry?.supplierName ?? entry?.supplier_info?.name ?? "RouteStack",
+  })).filter((entry: any) => entry.price);
+  if (!offers.length) return null;
+  return offers.reduce((cheapest: any, entry: any) =>
+    entry.price < cheapest.price ? entry : cheapest
+  );
+}
+
 let amadeusToken: { value: string; expiresAt: number } | null = null;
 let amadeusRequest: Promise<string> | null = null;
 
@@ -290,6 +350,24 @@ async function carOffer({ latitude, longitude, pickUp, dropOff }: Record<string,
   return priced.length ? priced.reduce((a: any, b: any) => (a.price < b.price ? a : b)) : null;
 }
 
+async function liveCarOffer({ destination, latitude, longitude, pickUp, dropOff }: Record<string, string>) {
+  if (Deno.env.get("ROUTESTACK_API_KEY") && Deno.env.get("ROUTESTACK_API_SECRET")) {
+    try {
+      const routeStackOffer = await routeStackCarOffer({
+        destination,
+        latitude,
+        longitude,
+        pickUp,
+        dropOff,
+      });
+      if (routeStackOffer) return routeStackOffer;
+    } catch {
+      // Fall through to the existing provider when RouteStack is unavailable.
+    }
+  }
+  return carOffer({ latitude, longitude, pickUp, dropOff });
+}
+
 async function priceTrip(trip: any, origin: any, weekend: any) {
   const result = {
     ...trip,
@@ -297,7 +375,7 @@ async function priceTrip(trip: any, origin: any, weekend: any) {
     price_sources: {
       flight: "demo",
       lodging: "demo",
-      car: trip.is_drivable ? "demo" : "not_applicable",
+      car: "demo",
     },
   };
 
@@ -339,9 +417,10 @@ async function priceTrip(trip: any, origin: any, weekend: any) {
     );
   }
 
-  if (trip.is_drivable) {
+  {
     tasks.push(
-      carOffer({
+      liveCarOffer({
+        destination: trip.destination,
         latitude: String(trip.latitude),
         longitude: String(trip.longitude),
         pickUp: weekend.departure,

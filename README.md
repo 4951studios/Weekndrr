@@ -82,7 +82,7 @@ also made account-only.
 | --- | --- | --- |
 | Flights (round-trip) | [Amadeus Self-Service](https://developers.amadeus.com/self-service) Flight Offers Search | `AMADEUS_CLIENT_ID` / `AMADEUS_CLIENT_SECRET` |
 | Hotels (2 nights) | [RouteStack MCP API](https://www.routestack.ai/docs) with Amadeus fallback | `ROUTESTACK_API_KEY` / `ROUTESTACK_API_SECRET` |
-| Car rental | [Booking.com on RapidAPI](https://rapidapi.com/DataCrawler/api/booking-com15) | `RAPIDAPI_KEY` |
+| Car rental | [RouteStack MCP API](https://www.routestack.ai/docs) with Booking.com RapidAPI fallback | `ROUTESTACK_API_KEY` / `ROUTESTACK_API_SECRET` |
 
 How it behaves:
 
@@ -91,6 +91,10 @@ How it behaves:
 - **RouteStack rollout.** When both RouteStack secrets are configured, hotel searches use
   RouteStack's live destination and hotel endpoints. If RouteStack is unavailable or returns
   no priced hotels, the existing Amadeus hotel lookup is used automatically.
+- **Car results.** Rental-car searches now run for every destination. RouteStack resolves the
+  pickup location and searches live cars first; RapidAPI remains the fallback when RouteStack
+  is unavailable. Returned car prices are included in `total_price` and shown in the trip
+  price breakdown.
 - **Honest labelling.** The results header shows `Live prices` only when at least one trip
   actually came back priced, `Demo prices` otherwise, and `Updating…` while fetching.
 - **CORS and secrets.** The browser/native client calls
