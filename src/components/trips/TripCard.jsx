@@ -23,7 +23,7 @@ const BADGES = {
   },
 };
 
-export default function TripCard({ trip, isSaved, onToggleSave, weekendId }) {
+export default function TripCard({ trip, isSaved, onToggleSave, weekendId, disabled = false }) {
   const badge = BADGES[trip.deal_badge];
   const BadgeIcon = badge?.icon;
   const TravelIcon = trip.is_drivable ? Car : Plane;
@@ -42,7 +42,14 @@ export default function TripCard({ trip, isSaved, onToggleSave, weekendId }) {
     >
       <Link
         to={to}
-        className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        aria-disabled={disabled}
+        onClick={(event) => {
+          if (disabled) event.preventDefault();
+        }}
+        className={cn(
+          "block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          disabled && "pointer-events-none opacity-60"
+        )}
       >
         <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-slate-200 shadow-sm">
           <SafeImage
@@ -97,6 +104,7 @@ export default function TripCard({ trip, isSaved, onToggleSave, weekendId }) {
 
       <button
         type="button"
+        disabled={disabled}
         onClick={() => onToggleSave(trip.id)}
         aria-label={
           isSaved

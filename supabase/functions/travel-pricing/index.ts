@@ -13,6 +13,7 @@ const json = (body: unknown, status = 200) =>
   });
 
 const dateOnly = (value: string) => value.slice(0, 10);
+const defaultTravellerCount = 2;
 
 const routeStackBaseUrl = Deno.env.get("ROUTESTACK_BASE_URL") ?? "https://mcp.routestack.ai";
 let routeStackToken: { value: string; expiresAt: number } | null = null;
@@ -428,7 +429,8 @@ async function priceTrip(trip: any, origin: any, weekend: any) {
       })
         .then((car) => {
           if (car) {
-            result.car_rental_price = Math.round(car.price);
+            result.car_rental_total_price = Math.round(car.price);
+            result.car_rental_price = Math.round(car.price / defaultTravellerCount);
             result.car_rental_name = `${car.vehicle} · ${car.supplier}`;
             result.price_sources.car = "live";
           }

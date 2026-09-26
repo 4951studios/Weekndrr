@@ -24,6 +24,7 @@ export default function TripsList({
   onToggleSave,
   weekendId,
   budget,
+  isUpdating,
 }) {
   if (isLoading) return <TripsSkeleton />;
 
@@ -51,6 +52,7 @@ export default function TripsList({
             isSaved={isSaved(trip.id)}
             onToggleSave={onToggleSave}
             weekendId={weekendId}
+            disabled={isUpdating}
           />
         ))}
       </AnimatePresence>

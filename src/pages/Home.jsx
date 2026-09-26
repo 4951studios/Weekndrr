@@ -218,6 +218,7 @@ export default function Home() {
                         isSaved={isSaved(trip.id)}
                         onToggleSave={toggleSaved}
                         weekendId={selectedWeekendId}
+                        disabled={isFetching}
                       />
                     ))}
                   </div>
@@ -269,6 +270,7 @@ export default function Home() {
             onToggleSave={toggleSaved}
             weekendId={selectedWeekendId}
             budget={budget}
+            isUpdating={isFetching}
           />
         </section>
       </main>

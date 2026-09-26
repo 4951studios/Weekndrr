@@ -191,8 +191,8 @@ export default function TripDetails() {
           <p className="flex items-center gap-2 text-xs text-muted-foreground">
             <Shield className="h-4 w-4 text-brand-emerald" aria-hidden="true" />
             <span>
-              <strong className="font-semibold text-slate-700">Secure booking</strong> —
-              your payment is protected.
+              <strong className="font-semibold text-slate-700">External booking</strong> —
+              Weekndrr does not process payments; you’ll complete booking on the provider’s site.
             </span>
           </p>
         </section>

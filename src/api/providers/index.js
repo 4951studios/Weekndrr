@@ -49,7 +49,9 @@ export function uniqueTrips(trips) {
 
 /** Trip[] priced by Supabase Edge Functions when enabled, otherwise the seed. */
 export async function searchTrips({ departureCity, weekend }) {
-  if (!liveSearchEnabled || !weekend) return uniqueTrips(tripsSeed);
+  if (!liveSearchEnabled || !weekend || departureCity === "Detecting location…") {
+    return uniqueTrips(tripsSeed);
+  }
 
   const origin = findCity(departureCity);
   try {
