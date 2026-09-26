@@ -5,6 +5,7 @@ dist-ssr
 .DS_Store
 npm-debug.log*
 .vite
+supabase/.temp
 
 # Native build artifacts (the ios/ and android/ projects themselves are committed)
 ios/App/App/public
