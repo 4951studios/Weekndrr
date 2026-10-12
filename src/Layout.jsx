@@ -13,6 +13,7 @@ export default function Layout({ children }) {
   const hideNav =
     pathname.startsWith("/checkout") ||
     pathname.startsWith("/confirmation") ||
+    pathname.startsWith("/email-confirmation") ||
     pathname.startsWith("/signin") ||
     pathname.startsWith("/signup") ||
     pathname.startsWith("/reset-password");

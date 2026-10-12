@@ -94,7 +94,10 @@ export const auth = {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: name }, emailRedirectTo: siteUrl("/signin") },
+      options: {
+        data: { full_name: name },
+        emailRedirectTo: siteUrl("/email-confirmation"),
+      },
     });
     if (error) throw new Error(error.message);
 

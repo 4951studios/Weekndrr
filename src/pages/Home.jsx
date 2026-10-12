@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, MapPin, Radio, RefreshCw, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { useSearch } from "@/hooks/useSearch";
+import { useAuth } from "@/hooks/useAuth";
 import { useSavedTrips, useTrips } from "@/hooks/useEntities";
-import { findCity, liveSearchEnabled } from "@/api/providers";
+import { liveSearchEnabled } from "@/api/providers";
 import { cn } from "@/lib/utils";
 import LocationPicker from "@/components/search/LocationPicker";
 import WeekendPicker from "@/components/search/WeekendPicker";
@@ -16,10 +17,13 @@ import { Button } from "@/components/ui/button";
 import { shuffle } from "@/utils";
 import { distanceInMiles } from "@/lib/distance";
 
+const NO_TRIPS = [];
+
 export default function Home() {
   const {
     weekends,
     departureCity,
+    departureOrigin,
     setDepartureCity,
     detectLocation,
     isDetectingLocation,
@@ -40,11 +44,15 @@ export default function Home() {
     selectedWeekend,
   } = useSearch();
 
-  const { data: trips = [], isLoading, isFetching } = useTrips({
-    departureCity,
+  const { data: trips = NO_TRIPS, isLoading, isFetching } = useTrips({
+    origin: departureOrigin,
     weekend: selectedWeekend,
   });
   const { isSaved, toggleSaved } = useSavedTrips();
+  const { user } = useAuth();
+  const displayName = user
+    ? user.name?.trim().split(/\s+/)[0] || user.email?.split("@")[0] || "Traveler"
+    : null;
 
   const [locationOpen, setLocationOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -54,7 +62,8 @@ export default function Home() {
   const [surpriseHistory, setSurpriseHistory] = useState([]);
 
   const filteredTrips = useMemo(() => {
-    const departure = findCity(departureCity);
+    // Results are only shown for a resolved origin; never measure from a guessed city.
+    if (!departureOrigin) return NO_TRIPS;
     return Array.from(
       new Map(
         trips
@@ -65,7 +74,7 @@ export default function Home() {
       .filter((trip) => trip.total_price <= budget)
       .filter(
         (trip) =>
-          !maxDistance || distanceInMiles(departure, trip) <= maxDistance
+          !maxDistance || distanceInMiles(departureOrigin, trip) <= maxDistance
       )
       .filter((trip) => !tripTypes.length || tripTypes.includes(trip.trip_type))
       .filter(
@@ -73,7 +82,7 @@ export default function Home() {
       )
       .filter((trip) => !maxTravelTime || trip.travel_time_hours <= maxTravelTime)
       .sort((a, b) => a.total_price - b.total_price);
-  }, [trips, budget, maxDistance, departureCity, tripTypes, lodgingTypes, maxTravelTime]);
+  }, [trips, budget, maxDistance, departureOrigin, tripTypes, lodgingTypes, maxTravelTime]);
 
   useEffect(() => {
     setSurpriseHistory([]);
@@ -100,10 +109,12 @@ export default function Home() {
     setIsShuffling(false);
   };
 
-  const hasLivePrices = trips.some(
+  const hasLivePrices = filteredTrips.some(
     (trip) => trip.price_source === "live" || trip.price_source === "mixed"
   );
-  const hasMixedPrices = trips.some((trip) => trip.price_source === "mixed");
+  const hasMixedPrices =
+    filteredTrips.some((trip) => trip.price_source === "mixed") ||
+    (hasLivePrices && filteredTrips.some((trip) => trip.price_source === "demo"));
 
   return (
     <div>
@@ -133,6 +144,12 @@ export default function Home() {
       </header>
 
       <main className="space-y-7 px-4 py-5">
+        {displayName && (
+          <h1 className="truncate text-2xl font-bold text-slate-900">
+            Hi, {displayName} 👋
+          </h1>
+        )}
+
         <WeekendPicker
           weekends={weekends}
           selectedId={selectedWeekendId}
@@ -265,7 +282,7 @@ export default function Home() {
 
           <TripsList
             trips={filteredTrips}
-            isLoading={isLoading}
+            isLoading={isLoading || isDetectingLocation}
             isSaved={isSaved}
             onToggleSave={toggleSaved}
             weekendId={selectedWeekendId}

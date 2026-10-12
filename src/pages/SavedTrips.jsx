@@ -1,10 +1,13 @@
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { useSavedTrips, useTrips } from "@/hooks/useEntities";
+import { useSearch } from "@/hooks/useSearch";
+import { tripForOrigin } from "@/lib/tripOrigin";
 import TripsList from "@/components/trips/TripsList";
 import { Button } from "@/components/ui/button";
 
 export default function SavedTrips() {
+  const { departureOrigin } = useSearch();
   const { data: trips = [], isLoading } = useTrips();
   const {
     savedIds,
@@ -15,7 +18,9 @@ export default function SavedTrips() {
     retry: retrySaved,
   } = useSavedTrips();
 
-  const saved = trips.filter((trip) => savedIds.has(trip.id));
+  const saved = trips
+    .filter((trip) => savedIds.has(trip.id))
+    .map((trip) => tripForOrigin(trip, departureOrigin));
 
   return (
     <div>

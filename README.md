@@ -32,6 +32,12 @@ Setup:
    VITE_SUPABASE_URL=https://xxxx.supabase.co
    VITE_SUPABASE_ANON_KEY=eyJ...
    ```
+   Set `VITE_SITE_URL` to the public production app origin. In Supabase
+   Authentication > URL Configuration, set the Site URL to that origin and
+   allow the `/email-confirmation` and `/reset-password` callback URLs. Do not use
+   a Vercel preview/deployment-protected URL for auth email redirects. The
+   confirmation email template should link to `{{ .ConfirmationURL }}` rather than
+   a hard-coded deployment URL.
 
 The anon key is designed to ship to clients; RLS is what protects the data, which is why
 the policies in the schema matter more than hiding the key.

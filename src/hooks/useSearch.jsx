@@ -9,12 +9,13 @@ import {
 } from "react";
 import { getWeekends } from "@/lib/weekends";
 import { getCoordinates } from "@/lib/native";
-import { cities, nearestCity } from "@/api/providers";
+import { cities, nearestCity, resolveOrigin } from "@/api/providers";
 
 const SearchContext = createContext(null);
 
 const FALLBACK_CITY = "Los Angeles";
 const STORAGE_KEY = "weekender:departure_city";
+const COORDS_KEY = "weekender:departure_coords";
 export const DETECTING_LABEL = "Detecting location…";
 
 function readStoredCity() {
@@ -25,9 +26,22 @@ function readStoredCity() {
   }
 }
 
-function storeCity(city) {
+function readStoredCoords() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(COORDS_KEY));
+    return Number.isFinite(parsed?.latitude) && Number.isFinite(parsed?.longitude)
+      ? { latitude: parsed.latitude, longitude: parsed.longitude }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeLocation(city, coords) {
   try {
     window.localStorage.setItem(STORAGE_KEY, city);
+    if (coords) window.localStorage.setItem(COORDS_KEY, JSON.stringify(coords));
+    else window.localStorage.removeItem(COORDS_KEY);
   } catch {
     /* storage unavailable */
   }
@@ -39,6 +53,9 @@ export function SearchProvider({ children }) {
   const [departureCity, setDepartureCityState] = useState(
     storedCity ?? DETECTING_LABEL
   );
+  const [departureCoords, setDepartureCoords] = useState(() =>
+    storedCity ? readStoredCoords() : null
+  );
   const [selectedWeekendId, setSelectedWeekendId] = useState(weekends[0].id);
   const [budget, setBudget] = useState(500);
   const [maxDistance, setMaxDistance] = useState(null);
@@ -47,17 +64,21 @@ export function SearchProvider({ children }) {
   const [maxTravelTime, setMaxTravelTime] = useState(null);
   const locationDetected = useRef(false);
 
-  const setDepartureCity = (city) => {
+  const setLocation = useCallback((city, coords = null) => {
     setDepartureCityState(city);
-    storeCity(city);
-  };
+    setDepartureCoords(coords);
+    storeLocation(city, coords);
+  }, []);
+
+  // Picking a city from the list measures distance from that city's centre.
+  const setDepartureCity = useCallback((city) => setLocation(city), [setLocation]);
 
   const detectLocation = useCallback(async () => {
     setDepartureCityState(DETECTING_LABEL);
 
     const coords = await getCoordinates();
     if (!coords) {
-      setDepartureCity(FALLBACK_CITY);
+      setLocation(FALLBACK_CITY);
       return;
     }
 
@@ -79,10 +100,11 @@ export function SearchProvider({ children }) {
     const known = cities.find(
       (city) => city.name.toLowerCase() === (name ?? "").toLowerCase()
     );
-    setDepartureCity(
-      known?.name ?? nearestCity(coords)?.name ?? name ?? FALLBACK_CITY
+    setLocation(
+      known?.name ?? nearestCity(coords)?.name ?? name ?? FALLBACK_CITY,
+      { latitude: coords.latitude, longitude: coords.longitude }
     );
-  }, []);
+  }, [setLocation]);
 
   useEffect(() => {
     // A remembered city means the user lands on their own location instantly.
@@ -94,15 +116,22 @@ export function SearchProvider({ children }) {
   const selectedWeekend =
     weekends.find((weekend) => weekend.id === selectedWeekendId) ?? weekends[0];
 
+  const isDetectingLocation = departureCity === DETECTING_LABEL;
+  const departureOrigin = useMemo(
+    () => (isDetectingLocation ? null : resolveOrigin(departureCity, departureCoords)),
+    [departureCity, departureCoords, isDetectingLocation]
+  );
+
   const activeFilterCount =
     tripTypes.length + lodgingTypes.length + (maxTravelTime ? 1 : 0) + (maxDistance ? 1 : 0);
 
   const value = {
     weekends,
     departureCity,
+    departureOrigin,
     setDepartureCity,
     detectLocation,
-    isDetectingLocation: departureCity === DETECTING_LABEL,
+    isDetectingLocation,
     selectedWeekend,
     selectedWeekendId,
     setSelectedWeekendId,

@@ -1,25 +1,31 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/client";
 import { liveSearchEnabled, searchTrips, uniqueTrips } from "@/api/providers";
+import { originKey, tripForOrigin } from "@/lib/tripOrigin";
 
-export function useTrips({ departureCity, weekend } = {}) {
+export function useTrips({ origin, weekend } = {}) {
   return useQuery({
-    queryKey: ["trips", liveSearchEnabled ? departureCity : null, weekend?.id ?? null],
+    queryKey: [
+      "trips",
+      originKey(origin),
+      liveSearchEnabled ? weekend?.id ?? null : null,
+    ],
     queryFn: () =>
-      liveSearchEnabled
-        ? searchTrips({ departureCity, weekend })
+      origin
+        ? searchTrips({ origin, weekend })
         : entities.Trip.list("total_price").then(uniqueTrips),
     staleTime: liveSearchEnabled ? 5 * 60 * 1000 : Infinity,
     placeholderData: (previous) => previous,
   });
 }
 
-export function useTrip(id) {
+export function useTrip(id, origin) {
   return useQuery({
     queryKey: ["trip", id],
     queryFn: () => entities.Trip.get(id),
     enabled: Boolean(id),
     staleTime: Infinity,
+    select: (trip) => tripForOrigin(trip, origin),
   });
 }
 

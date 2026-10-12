@@ -1,15 +1,40 @@
 import tripsSeed from "@/data/trips.json";
 import cities from "@/data/cities.json";
 import { supabase, supabaseEnabled } from "@/api/supabase";
+import { tripsForOrigin } from "@/lib/tripOrigin";
 
 export const liveSearchEnabled =
   supabaseEnabled && import.meta.env.VITE_LIVE_PRICING === "true";
+
+const LIVE_PRICE_BATCH_SIZE = 8;
+const LIVE_PRICE_LIMIT = 16;
 
 export function findCity(name) {
   return (
     cities.find((city) => city.name.toLowerCase() === (name ?? "").toLowerCase()) ??
     cities.find((city) => city.name === "Los Angeles")
   );
+}
+
+/**
+ * Departure point used for distance and pricing. Detected coordinates win over the
+ * snapped city so the radius is measured from where the user actually is; the
+ * nearest known city still supplies the airport code.
+ */
+export function resolveOrigin(name, coords) {
+  const city = cities.find(
+    (entry) => entry.name.toLowerCase() === (name ?? "").toLowerCase()
+  );
+  if (coords) {
+    const airport = city ?? nearestCity(coords);
+    return {
+      name: name ?? airport?.name,
+      iata: airport?.iata,
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+    };
+  }
+  return city ?? null;
 }
 
 /** Closest departure city to a coordinate, so detected locations map to an airport. */
@@ -47,27 +72,37 @@ export function uniqueTrips(trips) {
   );
 }
 
-/** Trip[] priced by Supabase Edge Functions when enabled, otherwise the seed. */
-export async function searchTrips({ departureCity, weekend }) {
-  if (!liveSearchEnabled || !weekend || departureCity === "Detecting location…") {
-    return uniqueTrips(tripsSeed);
-  }
+/** Trip[] for this origin, priced by Supabase Edge Functions when enabled. */
+export async function searchTrips({ origin, weekend }) {
+  const localTrips = tripsForOrigin(uniqueTrips(tripsSeed), origin);
+  if (!liveSearchEnabled || !weekend || !origin?.iata) return localTrips;
 
-  const origin = findCity(departureCity);
-  try {
-    const { data, error } = await supabase.functions.invoke("travel-pricing", {
-      body: {
-        trips: tripsSeed,
-        origin,
-        weekend: {
-          departure: weekend.departure.toISOString(),
-          return: weekend.return.toISOString(),
-        },
-      },
-    });
-    if (error || !Array.isArray(data?.trips)) throw error ?? new Error("Invalid pricing response");
-    return uniqueTrips(data.trips);
-  } catch {
-    return uniqueTrips(tripsSeed);
+  // The pricing function accepts at most 8 trips per request and each trip costs
+  // several provider calls, so only the nearest destinations are priced live.
+  const nearest = [...localTrips].sort((a, b) => a.distance_miles - b.distance_miles);
+  const toPrice = nearest.slice(0, LIVE_PRICE_LIMIT);
+  const batches = [];
+  for (let i = 0; i < toPrice.length; i += LIVE_PRICE_BATCH_SIZE) {
+    batches.push(toPrice.slice(i, i + LIVE_PRICE_BATCH_SIZE));
   }
+  const weekendBody = {
+    departure: weekend.departure.toISOString(),
+    return: weekend.return.toISOString(),
+  };
+
+  const priced = await Promise.all(
+    batches.map(async (batch) => {
+      try {
+        const { data, error } = await supabase.functions.invoke("travel-pricing", {
+          body: { trips: batch, origin, weekend: weekendBody },
+        });
+        if (error || !Array.isArray(data?.trips)) throw error ?? new Error("Invalid pricing response");
+        return data.trips;
+      } catch {
+        return batch;
+      }
+    })
+  );
+
+  return uniqueTrips([...priced.flat(), ...nearest.slice(LIVE_PRICE_LIMIT)]);
 }

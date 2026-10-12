@@ -17,6 +17,7 @@ import Home from "@/pages/Home";
 import TripDetails from "@/pages/TripDetails";
 import Checkout from "@/pages/Checkout";
 import Confirmation from "@/pages/Confirmation";
+import EmailConfirmation from "@/pages/EmailConfirmation";
 import SavedTrips from "@/pages/SavedTrips";
 import Profile from "@/pages/Profile";
 import NotFound from "@/pages/NotFound";
@@ -41,12 +42,10 @@ function DeepLinkHandler() {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const hash = location.hash || "";
+    const hashParams = new URLSearchParams(location.hash.replace(/^#/, ""));
     const isRecoveryLink =
-      hash.includes("access_token") ||
-      hash.includes("type=recovery") ||
-      params.has("code") ||
-      params.get("type") === "recovery";
+      params.get("type") === "recovery" ||
+      hashParams.get("type") === "recovery";
 
     if (isRecoveryLink && location.pathname !== "/reset-password") {
       navigate(`/reset-password${location.search}${location.hash}`, {
@@ -76,6 +75,10 @@ export default function App() {
                   <Route
                     path="/confirmation/:bookingId"
                     element={<Confirmation />}
+                  />
+                  <Route
+                    path="/email-confirmation"
+                    element={<EmailConfirmation />}
                   />
                   <Route path="/saved" element={<SavedTrips />} />
                   <Route path="/profile" element={<Profile />} />

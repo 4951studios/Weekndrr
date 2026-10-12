@@ -21,10 +21,10 @@ export default function Checkout() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { selectedWeekend, departureCity } = useSearch();
+  const { selectedWeekend, departureCity, departureOrigin } = useSearch();
 
   const tripId = searchParams.get("trip");
-  const { data: trip, isLoading } = useTrip(tripId);
+  const { data: trip, isLoading } = useTrip(tripId, departureOrigin);
   const weekend = searchParams.get("weekend")
     ? findWeekendById(searchParams.get("weekend"))
     : selectedWeekend;

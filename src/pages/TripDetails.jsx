@@ -36,9 +36,9 @@ export default function TripDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { data: trip, isLoading } = useTrip(id);
+  const { selectedWeekend, departureCity, departureOrigin } = useSearch();
+  const { data: trip, isLoading } = useTrip(id, departureOrigin);
   const { isSaved, toggleSaved } = useSavedTrips();
-  const { selectedWeekend, departureCity } = useSearch();
   const [copied, setCopied] = useState(false);
 
   const weekend = searchParams.get("weekend")
