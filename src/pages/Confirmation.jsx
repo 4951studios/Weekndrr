@@ -4,8 +4,9 @@ import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
 import { Check, ExternalLink } from "lucide-react";
 import { useBooking, useTrip } from "@/hooks/useEntities";
+import { useSearch } from "@/hooks/useSearch";
 import { getBookingSite } from "@/lib/bookingSites";
-import { findCity } from "@/api/providers";
+import { resolveOrigin } from "@/api/providers";
 import { openExternal } from "@/lib/native";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,7 +16,9 @@ import { formatPrice } from "@/utils";
 export default function Confirmation() {
   const { bookingId } = useParams();
   const { data: booking, isLoading } = useBooking(bookingId);
-  const { data: trip } = useTrip(booking?.trip_id);
+  const { departureOrigin } = useSearch();
+  const bookingOrigin = resolveOrigin(booking?.departure_city) ?? departureOrigin;
+  const { data: trip } = useTrip(booking?.trip_id, bookingOrigin);
 
   useEffect(() => {
     if (!booking) return;
@@ -147,7 +150,7 @@ export default function Confirmation() {
               openExternal(
                 flightSite.buildUrl({
                   trip,
-                  origin: findCity(booking.departure_city),
+                  origin: bookingOrigin,
                   weekend: {
                     departure: new Date(booking.travel_dates.departure),
                     return: new Date(booking.travel_dates.return),
