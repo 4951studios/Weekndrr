@@ -6,7 +6,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Chip } from "@/components/ui/chip";
+import DistanceSlider from "@/components/search/DistanceSlider";
 
 const TRIP_TYPES = [
   { label: "City", value: "city" },
@@ -26,24 +27,6 @@ const TRAVEL_TIMES = [
   { label: "Any", value: null },
 ];
 
-function Chip({ active, children, ...props }) {
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      className={cn(
-        "rounded-full border px-4 py-2 text-sm font-medium transition-colors",
-        active
-          ? "border-primary bg-primary/10 text-primary"
-          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-      )}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-}
-
 function toggleValue(list, value) {
   return list.includes(value)
     ? list.filter((item) => item !== value)
@@ -59,6 +42,9 @@ export default function FilterChips({
   setLodgingTypes,
   maxTravelTime,
   setMaxTravelTime,
+  maxDistance,
+  setMaxDistance,
+  resultCount,
   onClear,
 }) {
   return (
@@ -72,6 +58,8 @@ export default function FilterChips({
         </SheetHeader>
 
         <div className="space-y-5 overflow-y-auto">
+          <DistanceSlider value={maxDistance} onChange={setMaxDistance} />
+
           <fieldset>
             <legend className="mb-2 text-sm font-semibold text-slate-900">
               Trip type
@@ -131,7 +119,9 @@ export default function FilterChips({
             Clear
           </Button>
           <Button className="flex-1" onClick={() => onOpenChange(false)}>
-            Show results
+            {typeof resultCount === "number"
+              ? `Show ${resultCount} trip${resultCount === 1 ? "" : "s"}`
+              : "Show results"}
           </Button>
         </div>
       </SheetContent>

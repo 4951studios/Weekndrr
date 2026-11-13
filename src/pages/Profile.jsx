@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   Check,
@@ -7,6 +7,7 @@ import {
   EyeOff,
   KeyRound,
   LogOut,
+  ShieldCheck,
   Trash2,
   User,
   X,
@@ -17,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDateRange } from "@/lib/weekends";
+import { isAdPrivacyOptionsRequired, showAdPrivacyOptions } from "@/lib/ads";
 import { formatPrice } from "@/utils";
 import { cn } from "@/lib/utils";
 
@@ -51,6 +53,16 @@ export default function Profile() {
     changePassword,
     deleteAccount,
   } = useAuth();
+
+  const [adPrivacyRequired, setAdPrivacyRequired] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    isAdPrivacyOptionsRequired().then((required) => active && setAdPrivacyRequired(required));
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const tripById = Object.fromEntries(trips.map((trip) => [trip.id, trip]));
 
@@ -278,12 +290,12 @@ export default function Profile() {
         )}
 
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-slate-900">Past bookings</h2>
+          <h2 className="text-sm font-semibold text-slate-900">Your trip plans</h2>
 
           {bookingsError ? (
             <div role="alert" className="rounded-2xl bg-rose-50 px-6 py-10 text-center">
               <p className="text-sm font-medium text-rose-800">
-                We couldn’t load your bookings.
+                We couldn’t load your trip plans.
               </p>
               <Button variant="outline" className="mt-4" onClick={retryBookings}>
                 Try again
@@ -291,7 +303,7 @@ export default function Profile() {
             </div>
           ) : bookings.length === 0 ? (
             <p className="rounded-2xl border border-dashed border-slate-300 bg-white/60 px-6 py-10 text-center text-sm text-muted-foreground">
-              No bookings yet.
+              No trip plans yet. Pick a trip on Explore to get started.
             </p>
           ) : (
             <ul className="space-y-3">
@@ -325,15 +337,41 @@ export default function Profile() {
                         {booking.status}
                       </span>
                       <p className="mt-1.5 text-sm font-bold text-primary">
-                        {formatPrice(booking.total_paid)}
+                        {booking.total_paid > 0
+                          ? formatPrice(booking.total_paid)
+                          : "Est. " +
+                            formatPrice(
+                              (tripById[booking.trip_id]?.total_price ?? 0) *
+                                (booking.guests ?? 1)
+                            )}
                       </p>
                     </div>
                   </div>
+                  {booking.status === "pending" && (
+                    <Link
+                      to={`/confirmation/${booking.id}`}
+                      className="mt-3 inline-block text-sm font-semibold text-primary underline-offset-4 hover:underline"
+                    >
+                      Resume booking
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
           )}
         </section>
+
+        {adPrivacyRequired && (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => showAdPrivacyOptions().catch(() => {})}
+          >
+            <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+            Ad privacy choices
+          </Button>
+        )}
       </main>
     </div>
   );

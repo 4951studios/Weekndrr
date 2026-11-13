@@ -40,6 +40,7 @@ export default {
         },
         brand: {
           DEFAULT: "#4338CA",
+          deep: "#312E9E",
           navy: "#0f172a",
           coral: "#F97316",
           emerald: "#10b981",

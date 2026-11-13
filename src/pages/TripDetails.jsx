@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
   Car,
+  ChevronDown,
   Check,
   Clock,
   Heart,
@@ -15,7 +16,9 @@ import {
 import { useSavedTrips, useTrip } from "@/hooks/useEntities";
 import { useSearch } from "@/hooks/useSearch";
 import { findWeekendById } from "@/lib/weekends";
+import { useToast } from "@/components/ui/toast";
 import { shareLink, openExternal } from "@/lib/native";
+import { maybeShowInterstitial } from "@/lib/ads";
 import LodgingGallery from "@/components/trips/LodgingGallery";
 import PriceBreakdown from "@/components/trips/PriceBreakdown";
 import BookingSitePicker from "@/components/booking/BookingSitePicker";
@@ -34,12 +37,21 @@ const CANCELLATION_STYLES = {
 
 export default function TripDetails() {
   const { id } = useParams();
+  const adCountedTripId = useRef(null);
+
+  useEffect(() => {
+    // Ref guard keeps StrictMode's double effect from counting one open twice.
+    if (adCountedTripId.current === id) return;
+    adCountedTripId.current = id;
+    maybeShowInterstitial();
+  }, [id]);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { selectedWeekend, departureCity, departureOrigin } = useSearch();
   const { data: trip, isLoading } = useTrip(id, departureOrigin);
   const { isSaved, toggleSaved } = useSavedTrips();
   const [copied, setCopied] = useState(false);
+  const toast = useToast();
 
   const weekend = searchParams.get("weekend")
     ? findWeekendById(searchParams.get("weekend"))
@@ -52,7 +64,10 @@ export default function TripDetails() {
     });
     if (result === "copied") {
       setCopied(true);
+      toast.show("Link copied");
       window.setTimeout(() => setCopied(false), 2000);
+    } else if (result === "failed") {
+      toast.show("Couldn’t share this trip.", { tone: "error" });
     }
   };
 
@@ -90,7 +105,7 @@ export default function TripDetails() {
       <div className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200/70 bg-white/80 px-3 py-2.5 backdrop-blur-xl pt-safe">
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={() => (window.history.state?.idx > 0 ? navigate(-1) : navigate("/"))}
           aria-label="Go back"
           className="rounded-full p-2 text-slate-700 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
@@ -197,14 +212,22 @@ export default function TripDetails() {
           </p>
         </section>
 
-        <section className="space-y-3">
-          <div>
-            <h2 className="text-sm font-semibold text-slate-900">Where to book</h2>
-            <p className="text-xs text-muted-foreground">
-              Compare the same weekend on the sites you already trust.
-            </p>
-          </div>
-
+        <details className="group rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+            <span>
+              <span className="block text-sm font-semibold text-slate-900">
+                Compare prices on other sites
+              </span>
+              <span className="block text-xs text-muted-foreground">
+                Optional. “Book now” walks you through the full plan, including choosing a site.
+              </span>
+            </span>
+            <ChevronDown
+              className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180"
+              aria-hidden="true"
+            />
+          </summary>
+          <div className="space-y-3 border-t border-slate-100 p-4">
           <BookingSitePicker
             trip={trip}
             weekend={weekend}
@@ -236,7 +259,8 @@ export default function TripDetails() {
               </Button>
             </div>
           )}
-        </section>
+          </div>
+        </details>
       </div>
 
       <div className="fixed inset-x-0 bottom-nav-safe z-30 border-t border-slate-200 bg-white/90 backdrop-blur-xl">

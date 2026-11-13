@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { hideNativeSplash } from "@/lib/native";
+import { initAdMob, suppressBanner } from "@/lib/ads";
 
 /**
  * Branded loading screen that matches the native splash artwork, so the handoff
@@ -10,10 +11,15 @@ export default function SplashGate({ children }) {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    hideNativeSplash();
+    // Consent/ATT prompts must appear only once the native splash is gone and before AdMob starts.
+    hideNativeSplash().then(initAdMob);
     const timer = window.setTimeout(() => setVisible(false), 900);
     return () => window.clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (visible) return suppressBanner();
+  }, [visible]);
 
   return (
     <>

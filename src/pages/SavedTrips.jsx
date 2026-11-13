@@ -7,7 +7,7 @@ import TripsList from "@/components/trips/TripsList";
 import { Button } from "@/components/ui/button";
 
 export default function SavedTrips() {
-  const { departureOrigin } = useSearch();
+  const { departureOrigin, departureCity, selectedWeekend } = useSearch();
   const { data: trips = [], isLoading } = useTrips();
   const {
     savedIds,
@@ -52,12 +52,18 @@ export default function SavedTrips() {
             </Button>
           </div>
         ) : (
+          <>
+          <p className="mb-4 text-xs text-muted-foreground">
+            Prices shown for departures from {departureCity}
+            {selectedWeekend?.range ? `, ${selectedWeekend.range}` : ""}.
+          </p>
           <TripsList
             trips={saved}
             isLoading={isLoading || savedLoading}
             isSaved={isSaved}
             onToggleSave={toggleSaved}
           />
+          </>
         )}
       </main>
     </div>

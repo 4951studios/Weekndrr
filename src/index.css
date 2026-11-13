@@ -64,7 +64,12 @@
   }
 
   .bottom-nav-safe {
-    bottom: calc(66px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(66px + env(safe-area-inset-bottom, 0px) + var(--ad-banner-height, 0px));
+  }
+
+  /* Room for the tab bar (pb-24) plus the native ad banner docked above it. */
+  .pb-with-ad {
+    padding-bottom: calc(6rem + var(--ad-banner-height, 0px));
   }
 
   .pt-safe {

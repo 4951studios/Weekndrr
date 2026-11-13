@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { CircleAlert, Loader2, MailCheck } from "lucide-react";
 import { supabase } from "@/api/supabase";
 import { Button } from "@/components/ui/button";
+import { consumePostAuthRedirect } from "@/lib/authRedirect";
 
 export default function EmailConfirmation() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [signedIn, setSignedIn] = useState(false);
   const [result, setResult] = useState("verifying");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -37,6 +40,7 @@ export default function EmailConfirmation() {
           setErrorMessage(sessionError.message);
           setResult("invalid");
         } else {
+          setSignedIn(Boolean(data.session));
           setResult(data.session ? "confirmed" : "invalid");
         }
       })
@@ -96,17 +100,39 @@ export default function EmailConfirmation() {
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
         {confirmed
-          ? "Your account is ready. Sign in to continue."
+          ? signedIn
+            ? "Your account is ready and you’re signed in."
+            : "Your account is ready. Sign in to continue."
           : unavailable
             ? "Account confirmation requires a connected service."
             : errorMessage ||
               "This confirmation link is invalid or has already been used. Request a new one to continue."}
       </p>
-      <Button asChild size="lg" className="mt-6">
-        <Link to={confirmed ? "/signin" : "/signup"}>
-          {confirmed ? "Sign in" : "Create account"}
-        </Link>
-      </Button>
+      {confirmed && signedIn ? (
+        <Button
+          size="lg"
+          className="mt-6"
+          onClick={() =>
+            navigate(consumePostAuthRedirect() ?? "/profile", { replace: true })
+          }
+        >
+          Continue
+        </Button>
+      ) : (
+        <Button asChild size="lg" className="mt-6">
+          <Link to={confirmed ? "/signin" : "/signup"}>
+            {confirmed ? "Sign in" : "Create account"}
+          </Link>
+        </Button>
+      )}
+      {!confirmed && !unavailable && (
+        <p className="mt-4 text-sm text-muted-foreground">
+          Already confirmed?{" "}
+          <Link to="/signin" className="font-semibold text-primary">
+            Sign in
+          </Link>
+        </p>
+      )}
     </main>
   );
 }

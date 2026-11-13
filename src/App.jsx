@@ -11,6 +11,7 @@ import Layout from "@/Layout";
 import SplashGate from "@/components/SplashGate";
 import { SearchProvider } from "@/hooks/useSearch";
 import { AuthProvider } from "@/hooks/useAuth";
+import { ToastProvider } from "@/components/ui/toast";
 import { listenForAppUrlOpen } from "@/lib/native";
 import AuthScreen from "@/pages/AuthScreen";
 import Home from "@/pages/Home";
@@ -66,6 +67,7 @@ export default function App() {
         <DeepLinkHandler />
         <AuthProvider>
           <SearchProvider>
+            <ToastProvider>
             <SplashGate>
               <Layout>
                 <Routes>
@@ -98,6 +100,7 @@ export default function App() {
                 </Routes>
               </Layout>
             </SplashGate>
+            </ToastProvider>
           </SearchProvider>
         </AuthProvider>
       </BrowserRouter>

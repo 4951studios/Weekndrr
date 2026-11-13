@@ -1,6 +1,7 @@
 import { AnimatePresence } from "framer-motion";
 import { Compass } from "lucide-react";
 import TripCard from "@/components/trips/TripCard";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function TripsSkeleton({ count = 3 }) {
@@ -25,6 +26,8 @@ export default function TripsList({
   weekendId,
   budget,
   isUpdating,
+  onClearFilters,
+  onRaiseBudget,
 }) {
   if (isLoading) return <TripsSkeleton />;
 
@@ -38,6 +41,20 @@ export default function TripsList({
         <p className="mt-1 text-sm text-muted-foreground">
           Try raising your budget or clearing a filter.
         </p>
+        {(onClearFilters || onRaiseBudget) && (
+          <div className="mt-4 flex justify-center gap-2">
+            {onRaiseBudget && (
+              <Button size="sm" variant="outline" onClick={onRaiseBudget}>
+                Raise budget
+              </Button>
+            )}
+            {onClearFilters && (
+              <Button size="sm" onClick={onClearFilters}>
+                Clear filters
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     );
   }

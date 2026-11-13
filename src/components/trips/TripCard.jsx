@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { AlertCircle, Car, Heart, Plane, TrendingDown, Sparkles } from "lucide-react";
 import SafeImage from "@/components/SafeImage";
+import { Badge } from "@/components/ui/badge";
 import { capitalize, formatPrice, formatTravelTime } from "@/utils";
 import { cn } from "@/lib/utils";
 
@@ -9,17 +10,17 @@ const BADGES = {
   limited: {
     label: "Limited",
     icon: AlertCircle,
-    className: "bg-rose-500 text-white",
+    variant: "danger",
   },
   price_drop: {
     label: "Price Drop",
     icon: TrendingDown,
-    className: "bg-emerald-500 text-white",
+    variant: "success",
   },
   best_deal: {
     label: "Best Deal",
     icon: Sparkles,
-    className: "bg-brand-coral text-white",
+    variant: "coral",
   },
 };
 
@@ -63,15 +64,10 @@ export default function TripCard({ trip, isSaved, onToggleSave, weekendId, disab
           />
 
           {badge && (
-            <span
-              className={cn(
-                "absolute left-3 top-3 inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold shadow",
-                badge.className
-              )}
-            >
+            <Badge variant={badge.variant} className="absolute left-3 top-3">
               <BadgeIcon className="h-3.5 w-3.5" aria-hidden="true" />
               {badge.label}
-            </span>
+            </Badge>
           )}
 
           <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">

@@ -1,6 +1,7 @@
 import * as React from "react";
 import * as SheetPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
+import { suppressBanner } from "@/lib/ads";
 import { cn } from "@/lib/utils";
 
 const Sheet = SheetPrimitive.Root;
@@ -20,6 +21,13 @@ const SheetOverlay = React.forwardRef(({ className, ...props }, ref) => (
 ));
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName;
 
+// Native ad views draw above the WebView, so keep the banner hidden while a sheet is open.
+// Rendered inside Content, which Radix only mounts while the sheet is open.
+function SuppressAdBanner() {
+  React.useEffect(() => suppressBanner(), []);
+  return null;
+}
+
 const SheetContent = React.forwardRef(({ className, children, ...props }, ref) => (
   <SheetPortal>
     <SheetOverlay />
@@ -31,6 +39,7 @@ const SheetContent = React.forwardRef(({ className, children, ...props }, ref) =
       )}
       {...props}
     >
+      <SuppressAdBanner />
       <div
         aria-hidden="true"
         className="mx-auto h-1.5 w-10 shrink-0 rounded-full bg-slate-200"

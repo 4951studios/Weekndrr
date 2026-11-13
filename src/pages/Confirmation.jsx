@@ -1,12 +1,11 @@
-import { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import confetti from "canvas-confetti";
-import { Check, ExternalLink } from "lucide-react";
-import { useBooking, useTrip } from "@/hooks/useEntities";
+import { Bookmark, Check, ExternalLink } from "lucide-react";
+import { useBooking, useTrip, useUpdateBooking } from "@/hooks/useEntities";
 import { useSearch } from "@/hooks/useSearch";
 import { getBookingSite } from "@/lib/bookingSites";
 import { resolveOrigin } from "@/api/providers";
+import { useToast } from "@/components/ui/toast";
 import { openExternal } from "@/lib/native";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,15 +19,17 @@ export default function Confirmation() {
   const bookingOrigin = resolveOrigin(booking?.departure_city) ?? departureOrigin;
   const { data: trip } = useTrip(booking?.trip_id, bookingOrigin);
 
-  useEffect(() => {
-    if (!booking) return;
-    confetti({
-      particleCount: 120,
-      spread: 70,
-      origin: { y: 0.35 },
-      colors: ["#4338CA", "#F97316", "#10b981", "#0f172a"],
-    });
-  }, [booking]);
+  const updateBooking = useUpdateBooking();
+  const toast = useToast();
+
+  const setStatus = (status, message) =>
+    updateBooking.mutate(
+      { id: bookingId, values: { status } },
+      {
+        onSuccess: () => toast.show(message),
+        onError: () => toast.show("Couldn’t update this trip. Try again.", { tone: "error" }),
+      }
+    );
 
   if (isLoading) {
     return (
@@ -57,6 +58,8 @@ export default function Confirmation() {
   );
   const site = getBookingSite(booking.booking_site);
   const flightSite = getBookingSite(booking.flight_site);
+  const isPending = booking.status === "pending";
+  const isCancelled = booking.status === "cancelled";
 
   return (
     <motion.div
@@ -65,16 +68,32 @@ export default function Confirmation() {
       transition={{ duration: 0.35 }}
       className="px-5 py-10 text-center"
     >
-      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
-        <Check className="h-8 w-8 text-emerald-600" aria-hidden="true" />
+      <div
+        className={
+          "mx-auto flex h-16 w-16 items-center justify-center rounded-full " +
+          (isPending ? "bg-amber-100" : "bg-emerald-100")
+        }
+      >
+        {isPending ? (
+          <Bookmark className="h-8 w-8 text-amber-600" aria-hidden="true" />
+        ) : (
+          <Check className="h-8 w-8 text-emerald-600" aria-hidden="true" />
+        )}
       </div>
 
       <h1 className="mt-5 text-2xl font-bold text-slate-900">
-        Your {trip?.destination ?? "getaway"} plan is ready
+        {isPending
+          ? `Your ${trip?.destination ?? "getaway"} plan is saved`
+          : isCancelled
+            ? "This plan was cancelled"
+            : `Your ${trip?.destination ?? "getaway"} trip is booked`}
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        We saved the details for {booking.guest_info?.email}. Finish the reservation
-        on the booking site you selected.
+        {isPending
+          ? `Not booked yet. Finish the reservation on ${site?.name ?? "the booking site"} to lock it in. You can come back to this plan anytime from your profile.`
+          : isCancelled
+            ? "You can start a new plan from the trip page."
+            : `Details were saved for ${booking.guest_info?.email}.`}
       </p>
 
       <span className="mt-5 inline-block rounded-full bg-slate-900 px-5 py-2 font-mono text-base font-semibold tracking-[0.2em] text-white">
@@ -165,6 +184,19 @@ export default function Confirmation() {
             Compare flights on {flightSite.name}
           </Button>
         )}
+        {isPending && (
+          <Button
+            type="button"
+            size="lg"
+            variant="outline"
+            className="w-full"
+            disabled={updateBooking.isPending}
+            onClick={() => setStatus("confirmed", "Marked as booked")}
+          >
+            <Check className="h-4 w-4" aria-hidden="true" />
+            I’ve finished booking
+          </Button>
+        )}
         {trip && (
           <Button asChild size="lg" className="w-full">
             <Link to={`/trip/${trip.id}`}>View trip</Link>
@@ -173,6 +205,15 @@ export default function Confirmation() {
         <Button asChild variant="outline" size="lg" className="w-full">
           <Link to="/">Back to Explore</Link>
         </Button>
+        {isPending && (
+          <button
+            type="button"
+            onClick={() => setStatus("cancelled", "Plan cancelled")}
+            className="text-sm font-medium text-slate-500 underline underline-offset-2"
+          >
+            Cancel this plan
+          </button>
+        )}
       </div>
     </motion.div>
   );

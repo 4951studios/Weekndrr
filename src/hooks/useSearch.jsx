@@ -70,7 +70,7 @@ export function SearchProvider({ children }) {
     storeLocation(city, coords);
   }, []);
 
-  // Picking a city from the list measures distance from that city's centre.
+  // Picking a city from the list measures distance from that city's center.
   const setDepartureCity = useCallback((city) => setLocation(city), [setLocation]);
 
   const detectLocation = useCallback(async () => {

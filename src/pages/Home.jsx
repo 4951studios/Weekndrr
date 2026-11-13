@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils";
 import LocationPicker from "@/components/search/LocationPicker";
 import WeekendPicker from "@/components/search/WeekendPicker";
 import BudgetSlider from "@/components/search/BudgetSlider";
-import DistanceSlider from "@/components/search/DistanceSlider";
 import FilterChips from "@/components/search/FilterChips";
 import TripsList from "@/components/trips/TripsList";
 import TripCard from "@/components/trips/TripCard";
@@ -18,6 +17,8 @@ import { shuffle } from "@/utils";
 import { distanceInMiles } from "@/lib/distance";
 
 const NO_TRIPS = [];
+
+const capitalizeWord = (value) => value.charAt(0).toUpperCase() + value.slice(1);
 
 export default function Home() {
   const {
@@ -100,7 +101,7 @@ export default function Home() {
     setShuffleDeck(shuffle(pool).slice(0, 5));
     setSurprisePicks(null);
     setIsShuffling(true);
-    await new Promise((resolve) => setTimeout(resolve, 950));
+    await new Promise((resolve) => setTimeout(resolve, 600));
     setSurprisePicks(nextPicks);
     setSurpriseHistory((shown) => [
       ...shown,
@@ -108,6 +109,29 @@ export default function Home() {
     ]);
     setIsShuffling(false);
   };
+
+  const activeFilters = [
+    ...tripTypes.map((type) => ({
+      key: `type-${type}`,
+      label: capitalizeWord(type),
+      remove: () => setTripTypes(tripTypes.filter((item) => item !== type)),
+    })),
+    ...lodgingTypes.map((type) => ({
+      key: `lodging-${type}`,
+      label: capitalizeWord(type),
+      remove: () => setLodgingTypes(lodgingTypes.filter((item) => item !== type)),
+    })),
+    ...(maxTravelTime
+      ? [{ key: "time", label: `Under ${maxTravelTime}h`, remove: () => setMaxTravelTime(null) }]
+      : []),
+    ...(maxDistance
+      ? [{
+          key: "distance",
+          label: `Within ${maxDistance.toLocaleString("en-US")} mi`,
+          remove: () => setMaxDistance(null),
+        }]
+      : []),
+  ];
 
   const hasLivePrices = filteredTrips.some(
     (trip) => trip.price_source === "live" || trip.price_source === "mixed"
@@ -158,8 +182,6 @@ export default function Home() {
 
         <BudgetSlider value={budget} onChange={setBudget} />
 
-        <DistanceSlider value={maxDistance} onChange={setMaxDistance} />
-
         <div className="space-y-3">
           <Button
             variant="outline"
@@ -185,6 +207,33 @@ export default function Home() {
             {isShuffling ? "Finding your escape…" : "Surprise Me!"}
           </button>
         </div>
+
+        {activeFilters.length > 0 && (
+          <ul className="-mt-3 flex flex-wrap gap-2" aria-label="Active filters">
+            {activeFilters.map((filter) => (
+              <li key={filter.key}>
+                <button
+                  type="button"
+                  onClick={filter.remove}
+                  aria-label={`Remove filter: ${filter.label}`}
+                  className="flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {filter.label}
+                  <X className="h-3 w-3" aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+            <li>
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="px-2 py-1 text-xs font-semibold text-slate-500 underline underline-offset-2"
+              >
+                Clear all
+              </button>
+            </li>
+          </ul>
+        )}
 
         <AnimatePresence mode="wait">
           {isShuffling ? (
@@ -249,6 +298,18 @@ export default function Home() {
           ) : null}
         </AnimatePresence>
 
+        {!departureOrigin && !isDetectingLocation && (
+          <div role="status" className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            <p className="font-semibold">Where are you leaving from?</p>
+            <p className="mt-0.5">
+              We couldn’t detect your location. Choose a departure city to see trips.
+            </p>
+            <Button size="sm" className="mt-3" onClick={() => setLocationOpen(true)}>
+              Choose city
+            </Button>
+          </div>
+        )}
+
         <section aria-labelledby="results-heading" className="space-y-4">
           <div className="flex items-baseline justify-between">
             <h2 id="results-heading" className="text-sm font-semibold text-slate-900">
@@ -288,6 +349,8 @@ export default function Home() {
             weekendId={selectedWeekendId}
             budget={budget}
             isUpdating={isFetching}
+            onClearFilters={activeFilterCount > 0 ? clearFilters : undefined}
+            onRaiseBudget={budget < 2000 ? () => setBudget(Math.min(2000, budget + 250)) : undefined}
           />
         </section>
       </main>
@@ -309,6 +372,9 @@ export default function Home() {
         setLodgingTypes={setLodgingTypes}
         maxTravelTime={maxTravelTime}
         setMaxTravelTime={setMaxTravelTime}
+        maxDistance={maxDistance}
+        setMaxDistance={setMaxDistance}
+        resultCount={filteredTrips.length}
         onClear={clearFilters}
       />
     </div>

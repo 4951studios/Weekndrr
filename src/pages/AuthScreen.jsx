@@ -7,6 +7,11 @@ import { supabase } from "@/api/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  consumePostAuthRedirect,
+  peekPostAuthRedirect,
+  rememberPostAuthRedirect,
+} from "@/lib/authRedirect";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -53,7 +58,8 @@ export default function AuthScreen({ mode }) {
     };
   }, [recoveryStatus]);
 
-  const redirectTo = location.state?.from ?? "/profile";
+  const redirectTo =
+    location.state?.from ?? peekPostAuthRedirect() ?? "/profile";
 
   const update = (field, value) =>
     setValues((current) => ({ ...current, [field]: value }));
@@ -90,12 +96,15 @@ export default function AuthScreen({ mode }) {
       } else if (isSignUp) {
         const result = await signUp(values);
         if (result?.needsConfirmation) {
+          // Router state is lost when the confirmation link reopens the app.
+          rememberPostAuthRedirect(redirectTo);
           setAwaitingConfirmation(true);
           return;
         }
       } else {
         await signIn(values);
       }
+      consumePostAuthRedirect();
       navigate(redirectTo, { replace: true });
     } catch (error) {
       const message = error?.message ?? "";

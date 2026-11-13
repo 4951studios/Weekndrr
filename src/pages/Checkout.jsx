@@ -5,6 +5,7 @@ import { ArrowLeft, Loader2, Minus, Plus } from "lucide-react";
 import { entities } from "@/api/client";
 import { useTrip } from "@/hooks/useEntities";
 import { useSearch } from "@/hooks/useSearch";
+import { useAuth } from "@/hooks/useAuth";
 import { findWeekendById } from "@/lib/weekends";
 import SafeImage from "@/components/SafeImage";
 import GuestForm from "@/components/checkout/GuestForm";
@@ -16,6 +17,7 @@ import { formatPrice, generateConfirmationCode } from "@/utils";
 import { findCity } from "@/api/providers";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_PATTERN = /^\+?[\d\s().-]{7,20}$/;
 
 export default function Checkout() {
   const [searchParams] = useSearchParams();
@@ -30,7 +32,14 @@ export default function Checkout() {
     : selectedWeekend;
 
   const [guests, setGuests] = useState(2);
-  const [guest, setGuest] = useState({ name: "", email: "", phone: "" });
+  const { user } = useAuth();
+  const [guestEdits, setGuestEdits] = useState({});
+  const guest = {
+    name: user?.name ?? "",
+    email: user?.email ?? "",
+    phone: user?.phone ?? "",
+    ...guestEdits,
+  };
   const [errors, setErrors] = useState({});
   const [processing, setProcessing] = useState(false);
   const [formError, setFormError] = useState(null);
@@ -59,6 +68,7 @@ export default function Checkout() {
     if (!guest.email.trim()) next.email = "Email is required.";
     else if (!EMAIL_PATTERN.test(guest.email)) next.email = "Enter a valid email.";
     if (!guest.phone.trim()) next.phone = "Phone is required.";
+    else if (!PHONE_PATTERN.test(guest.phone.trim())) next.phone = "Enter a valid phone number.";
 
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -69,7 +79,6 @@ export default function Checkout() {
     if (!trip || !validate()) return;
     setProcessing(true);
     try {
-      await new Promise((resolve) => window.setTimeout(resolve, 350));
       const booking = await entities.Booking.create({
         trip_id: trip.id,
         departure_city: departureCity,
@@ -120,14 +129,14 @@ export default function Checkout() {
       <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-slate-200/70 bg-white/80 px-3 py-2.5 backdrop-blur-xl pt-safe">
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={() => (window.history.state?.idx > 0 ? navigate(-1) : navigate("/"))}
           aria-label="Go back"
           className="rounded-full p-2 text-slate-700 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <ArrowLeft className="h-5 w-5" aria-hidden="true" />
         </button>
         <h1 className="text-base font-semibold text-slate-900">
-          Complete your booking
+          Plan your trip
         </h1>
       </header>
 
@@ -139,6 +148,14 @@ export default function Checkout() {
         }}
         noValidate
       >
+        <div className="rounded-xl bg-indigo-50 p-3 text-xs text-indigo-800">
+          <p className="font-semibold">Two quick steps</p>
+          <p className="mt-0.5">
+            1. Save your plan here. 2. Finish the reservation and payment on the
+            booking site you choose. Weekndrr doesn’t take payment.
+          </p>
+        </div>
+
         <section className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm">
           <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-slate-200">
             <SafeImage
@@ -152,8 +169,9 @@ export default function Checkout() {
             <p className="text-xs text-muted-foreground">{weekend.range}</p>
             <p className="text-xs text-muted-foreground">{trip.lodging_name}</p>
           </div>
-          <span className="shrink-0 font-bold text-primary">
-            {formatPrice(total)}
+          <span className="shrink-0 text-right">
+            <span className="block font-bold text-primary">{formatPrice(total)}</span>
+            <span className="block text-[11px] text-muted-foreground">est. total</span>
           </span>
         </section>
 
@@ -195,7 +213,7 @@ export default function Checkout() {
           values={guest}
           errors={errors}
           onChange={(name, value) =>
-            setGuest((current) => ({ ...current, [name]: value }))
+            setGuestEdits((current) => ({ ...current, [name]: value }))
           }
         />
 
@@ -236,7 +254,7 @@ export default function Checkout() {
         )}
 
         <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-900">Trip summary</h2>
+          <h2 className="text-sm font-semibold text-slate-900">Estimated cost</h2>
           <div className="mt-3 flex items-center justify-between text-sm text-slate-600">
             <span>
               {formatPrice(trip.total_price)} × {guests} guest
@@ -244,11 +262,11 @@ export default function Checkout() {
             </span>
             <span>{formatPrice(total)}</span>
           </div>
-          <div className="my-3 h-px bg-slate-200" />
-          <div className="mt-3 rounded-xl bg-indigo-50 p-3 text-xs text-indigo-800">
-            Weekndrr does not charge you. You’ll complete the reservation on the
-            booking site you choose.
-          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Estimate for lodging
+            {trip.is_drivable ? "" : "; flights are priced separately on the flight site"}.
+            Final prices are set by the booking site.
+          </p>
         </section>
 
         {formError && (
@@ -256,7 +274,8 @@ export default function Checkout() {
             <p>{formError}</p>
             <button
               type="button"
-              onClick={() => setFormError(null)}
+              onClick={submit}
+              disabled={processing}
               className="mt-2 font-semibold underline underline-offset-2"
             >
               Try again

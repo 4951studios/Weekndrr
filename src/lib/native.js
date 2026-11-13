@@ -26,20 +26,6 @@ export async function listenForAppUrlOpen(onUrl) {
   }
 }
 
-/** Initialize Google Mobile Ads in test mode until production app IDs are supplied. */
-export async function initAdMob() {
-  if (!isNative) return;
-  try {
-    const { AdMob, MaxAdContentRating } = await import("@capacitor-community/admob");
-    await AdMob.initialize({
-      initializeForTesting: true,
-      maxAdContentRating: MaxAdContentRating.General,
-    });
-  } catch {
-    /* AdMob is optional and unavailable during some native startup states */
-  }
-}
-
 /** Status bar setup. No-op on the web. */
 export async function initNativeShell() {
   if (!isNative) return;
@@ -152,7 +138,7 @@ export async function openExternal(url) {
       await Browser.open({ url, presentationStyle: "popover" });
       return;
     } catch {
-      /* fall through to the web behaviour */
+      /* fall through to the web behavior */
     }
   }
   window.open(url, "_blank", "noopener,noreferrer");

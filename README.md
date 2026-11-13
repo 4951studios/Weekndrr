@@ -204,6 +204,29 @@ Permissions declared: `NSLocationWhenInUseUsageDescription` in
 `ACCESS_COARSE_LOCATION` in
 [android/app/src/main/AndroidManifest.xml](android/app/src/main/AndroidManifest.xml).
 
+### Ads (Google AdMob)
+
+[src/lib/ads.js](src/lib/ads.js) wraps `@capacitor-community/admob` (native only; the web
+build shows no ads):
+
+- **Consent first.** After the native splash, the app shows Google's UMP consent form
+  (GDPR regions), then the iOS App Tracking Transparency prompt, then initializes AdMob.
+  Users in regions that require it get an **Ad privacy choices** button on Profile.
+- **Banner.** One adaptive banner docked above the tab bar on Explore / Trip / Saved /
+  Profile. It's hidden on checkout and auth screens, while a bottom sheet is open and while
+  a text field is focused. Its height is exposed as `--ad-banner-height` so page padding,
+  sticky CTAs (`.bottom-nav-safe`) and toasts move above it.
+- **Interstitial.** Preloaded and shown when opening a trip — at most every 3rd trip open
+  and no more than once every 3 minutes.
+
+App IDs live in the native projects (iOS `GADApplicationIdentifier` in
+[ios/App/Weekndrr/Info.plist](ios/App/Weekndrr/Info.plist), Android `admob_app_id` in
+[strings.xml](android/app/src/main/res/values/strings.xml)). Ad unit IDs come from
+`VITE_ADMOB_*` in `.env`; any unit left blank falls back to Google's test unit, so
+development builds never serve live ads. Rebuild with `npm run sync` after changing them.
+[website/app-ads.txt](website/app-ads.txt) must be served at the root of the developer
+website listed in the App Store / Play listings.
+
 ## Stack
 
 - Vite + React 18 (JavaScript, `.jsx`)
